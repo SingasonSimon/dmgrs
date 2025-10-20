@@ -10,8 +10,13 @@ import '../../services/mpesa_service.dart';
 
 class LoanRepaymentScreen extends StatefulWidget {
   final LoanModel loan;
+  final bool isAdminView;
 
-  const LoanRepaymentScreen({super.key, required this.loan});
+  const LoanRepaymentScreen({
+    super.key,
+    required this.loan,
+    this.isAdminView = false,
+  });
 
   @override
   State<LoanRepaymentScreen> createState() => _LoanRepaymentScreenState();
@@ -356,8 +361,10 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
                 // Admin mark as paid button
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
-                    final isAdmin = authProvider.currentUser?.role == AppConstants.adminRole;
-                    if (isAdmin) {
+                    final isAdmin =
+                        authProvider.currentUser?.role ==
+                        AppConstants.adminRole;
+                    if (isAdmin || widget.isAdminView) {
                       return IconButton(
                         onPressed: () => _markPaymentAsPaid(payment),
                         icon: const Icon(Icons.check_circle),
@@ -368,12 +375,12 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
                     return const SizedBox.shrink();
                   },
                 ),
-                // Regular payment button
-                IconButton(
-                  onPressed: () => _makePayment(payment),
-                  icon: const Icon(Icons.payment),
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                if (!widget.isAdminView)
+                  IconButton(
+                    onPressed: () => _makePayment(payment),
+                    icon: const Icon(Icons.payment),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
               ],
             ],
           ),
@@ -388,7 +395,7 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
       (payment) => !payment.isPaid,
     );
 
-    if (!hasUnpaidPayments) {
+    if (!hasUnpaidPayments || widget.isAdminView) {
       return const SizedBox.shrink();
     }
 
@@ -546,11 +553,15 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
     AppHelpers.showConfirmationDialog(
       context,
       title: 'Mark Payment as Paid',
-      message: 'Are you sure you want to mark this payment of ${AppHelpers.formatCurrency(payment.amount)} as paid?',
+      message:
+          'Are you sure you want to mark this payment of ${AppHelpers.formatCurrency(payment.amount)} as paid?',
     ).then((confirmed) async {
       if (confirmed == true) {
         try {
-          final loanProvider = Provider.of<LoanProvider>(context, listen: false);
+          final loanProvider = Provider.of<LoanProvider>(
+            context,
+            listen: false,
+          );
           final success = await loanProvider.markLoanPaymentCompleted(
             loanId: widget.loan.loanId,
             paymentId: payment.paymentId,

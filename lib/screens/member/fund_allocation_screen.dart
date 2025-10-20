@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/group_provider.dart';
 import '../../providers/contribution_provider.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
@@ -13,10 +14,63 @@ class FundAllocationScreen extends StatefulWidget {
 }
 
 class _FundAllocationScreenState extends State<FundAllocationScreen> {
+  String? _selectedGroupId;
+  bool _showOnlyMine = true;
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  Widget _buildFiltersRow(BuildContext context) {
+    return Consumer2<GroupProvider, AuthProvider>(
+      builder: (context, groupProvider, authProvider, _) {
+        final userGroups = groupProvider.groups;
+        return Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _selectedGroupId,
+                decoration: const InputDecoration(
+                  labelText: 'Group (soon)',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String>(
+                    value: null,
+                    child: Text('All Groups'),
+                  ),
+                  ...userGroups.map(
+                    (g) => DropdownMenuItem<String>(
+                      value: g.groupId,
+                      child: Text(g.groupName),
+                    ),
+                  ),
+                ],
+                onChanged: (val) {
+                  setState(() {
+                    _selectedGroupId = val;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            FilterChip(
+              label: const Text('Only Mine'),
+              selected: _showOnlyMine,
+              onSelected: (v) {
+                setState(() {
+                  _showOnlyMine = v;
+                });
+              },
+              selectedColor: Theme.of(
+                context,
+              ).colorScheme.primary.withOpacity(0.15),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -33,6 +87,11 @@ class _FundAllocationScreenState extends State<FundAllocationScreen> {
       context,
       listen: false,
     );
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    Provider.of<GroupProvider>(
+      context,
+      listen: false,
+    ).loadUserGroups(authProvider.userId);
     contributionProvider.loadCurrentCycle();
     contributionProvider.loadAllocations();
     contributionProvider.loadLendingPoolBalance();
@@ -62,6 +121,8 @@ class _FundAllocationScreenState extends State<FundAllocationScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildFiltersRow(context),
+                  const SizedBox(height: 16),
                   // Current Cycle Info
                   _buildCurrentCycleCard(context, contributionProvider),
 
@@ -244,21 +305,28 @@ class _FundAllocationScreenState extends State<FundAllocationScreen> {
     BuildContext context,
     ContributionProvider provider,
   ) {
-    final userAllocations = provider.getUserAllocations(
-      Provider.of<AuthProvider>(context, listen: false).userId,
-    );
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final all = provider.allocations;
+    final filtered = all.where((a) {
+      if (_showOnlyMine && a.userId != authProvider.userId) return false;
+      if (_selectedGroupId != null && _selectedGroupId!.isNotEmpty) {
+        return a.metadata?['groupId'] == _selectedGroupId ||
+            a.groupId == _selectedGroupId;
+      }
+      return true;
+    }).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Your Allocations',
+          _showOnlyMine ? 'Your Allocations' : 'All Allocations',
           style: Theme.of(
             context,
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        if (userAllocations.isEmpty)
+        if (filtered.isEmpty)
           Card(
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -287,7 +355,7 @@ class _FundAllocationScreenState extends State<FundAllocationScreen> {
             ),
           )
         else
-          ...userAllocations.map(
+          ...filtered.map(
             (allocation) => _buildAllocationCard(context, allocation),
           ),
       ],

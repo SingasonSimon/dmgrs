@@ -14,6 +14,7 @@ class UserModel {
   final DateTime? lastLoginAt;
   final int? consecutiveMisses;
   final DateTime? lastContributionDate;
+  final List<String>? groupIds;
 
   UserModel({
     required this.userId,
@@ -28,6 +29,7 @@ class UserModel {
     this.lastLoginAt,
     this.consecutiveMisses = 0,
     this.lastContributionDate,
+    this.groupIds,
   });
 
   // Convert UserModel to Map for Firestore
@@ -49,6 +51,7 @@ class UserModel {
       'lastContributionDate': lastContributionDate != null
           ? Timestamp.fromDate(lastContributionDate!)
           : null,
+      'groupIds': groupIds,
     };
   }
 
@@ -71,6 +74,7 @@ class UserModel {
       lastContributionDate: map['lastContributionDate'] != null
           ? (map['lastContributionDate'] as Timestamp).toDate()
           : null,
+      groupIds: (map['groupIds'] as List?)?.map((e) => e.toString()).toList(),
     );
   }
 
@@ -94,6 +98,7 @@ class UserModel {
     DateTime? lastLoginAt,
     int? consecutiveMisses,
     DateTime? lastContributionDate,
+    List<String>? groupIds,
   }) {
     return UserModel(
       userId: userId ?? this.userId,
@@ -108,6 +113,7 @@ class UserModel {
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       consecutiveMisses: consecutiveMisses ?? this.consecutiveMisses,
       lastContributionDate: lastContributionDate ?? this.lastContributionDate,
+      groupIds: groupIds ?? this.groupIds,
     );
   }
 

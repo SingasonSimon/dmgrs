@@ -556,7 +556,7 @@ class _DashboardTab extends StatelessWidget {
                 Colors.blue,
                 () {
                   // Navigate to payments tab
-                  _onTabTapped(1);
+                  onTabTapped(1);
                 },
               ),
             ),
@@ -570,7 +570,7 @@ class _DashboardTab extends StatelessWidget {
                 Colors.green,
                 () {
                   // Navigate to loans tab
-                  _onTabTapped(2);
+                  onTabTapped(2);
                 },
               ),
             ),
@@ -588,7 +588,7 @@ class _DashboardTab extends StatelessWidget {
                 Colors.orange,
                 () {
                   // Navigate to payments tab, allocations section
-                  _onTabTapped(1);
+                  onTabTapped(1);
                 },
               ),
             ),
@@ -602,7 +602,7 @@ class _DashboardTab extends StatelessWidget {
                 Colors.purple,
                 () {
                   // Navigate to profile tab
-                  _onTabTapped(3);
+                  onTabTapped(3);
                 },
               ),
             ),

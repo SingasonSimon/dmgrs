@@ -145,6 +145,7 @@ class ContributionProvider with ChangeNotifier {
     required DateTime startDate,
     required DateTime endDate,
     String? notes,
+    String? groupId,
   }) async {
     try {
       _setLoading(true);
@@ -158,6 +159,7 @@ class ContributionProvider with ChangeNotifier {
         currentIndex: 0,
         isActive: true,
         notes: notes,
+        metadata: groupId != null ? {'groupId': groupId} : null,
       );
 
       await FirestoreService.createCycle(cycle);
@@ -270,6 +272,18 @@ class ContributionProvider with ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
+
+      // Enforce one contribution per user per calendar month
+      final now = DateTime.now();
+      final alreadyContributed =
+          await FirestoreService.hasUserContributionInMonth(
+            userId: userId,
+            year: now.year,
+            month: now.month,
+          );
+      if (alreadyContributed) {
+        throw Exception('You have already contributed this month.');
+      }
 
       final contributionId = AppHelpers.generateRandomId();
       final now = DateTime.now();

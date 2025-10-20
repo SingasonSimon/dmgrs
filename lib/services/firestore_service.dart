@@ -807,6 +807,9 @@ class FirestoreService {
           amount: allocationAmount,
           date: DateTime.now(),
           cycleId: cycle.cycleId,
+          groupId: cycle.metadata != null
+              ? cycle.metadata!['groupId'] as String?
+              : null,
         );
 
         final allocationRef = _firestore
@@ -943,5 +946,51 @@ class FirestoreService {
     } catch (e) {
       throw Exception('Failed to delete group: $e');
     }
+  }
+
+  // Sync user's groupIds field
+  static Future<void> addUserToGroup(String userId, String groupId) async {
+    try {
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .update({
+            'groupIds': FieldValue.arrayUnion([groupId]),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+    } catch (e) {
+      throw Exception('Failed to add user to group (user doc): $e');
+    }
+  }
+
+  static Future<void> removeUserFromGroup(String userId, String groupId) async {
+    try {
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .update({
+            'groupIds': FieldValue.arrayRemove([groupId]),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+    } catch (e) {
+      throw Exception('Failed to remove user from group (user doc): $e');
+    }
+  }
+
+  // Contributions - utility to check if user has a contribution in a month
+  static Future<bool> hasUserContributionInMonth({
+    required String userId,
+    required int year,
+    required int month,
+  }) async {
+    final monthStart = DateTime(year, month, 1);
+    final monthEnd = DateTime(year, month + 1, 1);
+    final snapshot = await _firestore
+        .collection(AppConstants.contributionsCollection)
+        .where('userId', isEqualTo: userId)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(monthStart))
+        .where('date', isLessThan: Timestamp.fromDate(monthEnd))
+        .get();
+    return snapshot.docs.isNotEmpty;
   }
 }

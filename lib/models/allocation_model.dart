@@ -6,6 +6,7 @@ class AllocationModel {
   final double amount;
   final DateTime date;
   final String cycleId;
+  final String? groupId;
   final bool disbursed;
   final DateTime? disbursementDate;
   final String? disbursementMethod;
@@ -19,6 +20,7 @@ class AllocationModel {
     required this.amount,
     required this.date,
     required this.cycleId,
+    this.groupId,
     this.disbursed = false,
     this.disbursementDate,
     this.disbursementMethod,
@@ -35,6 +37,7 @@ class AllocationModel {
       'amount': amount,
       'date': Timestamp.fromDate(date),
       'cycleId': cycleId,
+      'groupId': groupId,
       'disbursed': disbursed,
       'disbursementDate': disbursementDate != null
           ? Timestamp.fromDate(disbursementDate!)
@@ -54,6 +57,7 @@ class AllocationModel {
       amount: (map['amount'] ?? 0.0).toDouble(),
       date: (map['date'] as Timestamp).toDate(),
       cycleId: map['cycleId'] ?? '',
+      groupId: map['groupId'],
       disbursed: map['disbursed'] ?? false,
       disbursementDate: map['disbursementDate'] != null
           ? (map['disbursementDate'] as Timestamp).toDate()
@@ -78,6 +82,7 @@ class AllocationModel {
     double? amount,
     DateTime? date,
     String? cycleId,
+    String? groupId,
     bool? disbursed,
     DateTime? disbursementDate,
     String? disbursementMethod,
@@ -91,6 +96,7 @@ class AllocationModel {
       amount: amount ?? this.amount,
       date: date ?? this.date,
       cycleId: cycleId ?? this.cycleId,
+      groupId: groupId ?? this.groupId,
       disbursed: disbursed ?? this.disbursed,
       disbursementDate: disbursementDate ?? this.disbursementDate,
       disbursementMethod: disbursementMethod ?? this.disbursementMethod,

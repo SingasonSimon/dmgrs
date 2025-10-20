@@ -22,6 +22,12 @@ class AuthProvider with ChangeNotifier {
     _initializeAuth();
   }
 
+  // Test-only constructor to bypass Firebase listeners and inject a user
+  AuthProvider.test(UserModel user) {
+    _currentUser = user;
+    _isLoading = false;
+  }
+
   // Initialize authentication state
   void _initializeAuth() {
     AuthService.authStateChanges.listen((user) async {

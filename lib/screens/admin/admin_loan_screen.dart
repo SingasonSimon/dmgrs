@@ -761,7 +761,10 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
   void _navigateToLoanDetails(loan) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => LoanRepaymentScreen(loan: loan)),
+      MaterialPageRoute(
+        builder: (context) =>
+            LoanRepaymentScreen(loan: loan, isAdminView: true),
+      ),
     );
   }
 }

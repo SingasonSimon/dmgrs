@@ -7,10 +7,22 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'package:digital_merry_go_round/main.dart';
+import 'package:digital_merry_go_round/firebase_options.dart';
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (_) {
+      // Ignore if already initialized or unavailable in CI
+    }
+  });
   testWidgets('App loads without crashing', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const DigitalMerryGoRoundApp());

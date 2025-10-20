@@ -20,6 +20,7 @@ class _AdminEditUserScreenState extends State<AdminEditUserScreen> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
+  late TextEditingController _groupIdsController;
 
   String _selectedRole = '';
   String _selectedStatus = '';
@@ -33,6 +34,9 @@ class _AdminEditUserScreenState extends State<AdminEditUserScreen> {
     _phoneController = TextEditingController(
       text: widget.user.phone.replaceAll('+254 ', ''),
     );
+    _groupIdsController = TextEditingController(
+      text: (widget.user.groupIds ?? []).join(', '),
+    );
     _selectedRole = widget.user.role;
     _selectedStatus = widget.user.status;
   }
@@ -42,6 +46,7 @@ class _AdminEditUserScreenState extends State<AdminEditUserScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _groupIdsController.dispose();
     super.dispose();
   }
 
@@ -59,6 +64,11 @@ class _AdminEditUserScreenState extends State<AdminEditUserScreen> {
         phone: PhoneFormatter.formatPhoneNumber(_phoneController.text.trim()),
         role: _selectedRole,
         status: _selectedStatus,
+        groupIds: _groupIdsController.text
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList(),
       );
 
       await FirestoreService.updateUser(updatedUser);
@@ -219,6 +229,18 @@ class _AdminEditUserScreenState extends State<AdminEditUserScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
+
+                      // Group IDs
+                      TextFormField(
+                        controller: _groupIdsController,
+                        decoration: InputDecoration(
+                          labelText: 'Group IDs (comma-separated)',
+                          prefixIcon: const Icon(Icons.groups),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
 
                       // Role Selection
                       DropdownButtonFormField<String>(

@@ -22,6 +22,7 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _groupIdsController = TextEditingController();
 
   String _selectedRole = AppConstants.memberRole;
   bool _isLoading = false;
@@ -37,6 +38,7 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _groupIdsController.dispose();
     super.dispose();
   }
 
@@ -215,6 +217,19 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
               },
             ),
             const SizedBox(height: 16),
+
+            // Groups (comma-separated IDs for now)
+            TextFormField(
+              controller: _groupIdsController,
+              decoration: InputDecoration(
+                labelText: 'Group IDs (comma-separated)',
+                prefixIcon: const Icon(Icons.groups),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                hintText: 'e.g. g1, g2',
+              ),
+            ),
 
             // Role Selection
             DropdownButtonFormField<String>(
@@ -404,6 +419,11 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
           role: _selectedRole,
           joinedAt: DateTime.now(),
           status: 'active',
+          groupIds: _groupIdsController.text
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList(),
         );
 
         await FirestoreService.createUser(userModel);
