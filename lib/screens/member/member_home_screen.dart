@@ -9,6 +9,7 @@ import '../../widgets/modern_bottom_nav.dart';
 import '../../widgets/modern_navigation_drawer.dart';
 import '../../widgets/modern_card.dart';
 import '../shared/notifications_screen.dart';
+import '../shared/welcome_screen.dart';
 import 'contribution_screen.dart';
 import 'loan_screen.dart';
 import 'profile_screen.dart';
@@ -30,7 +31,10 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    _loadData();
+    // Delay data loading to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   @override
@@ -69,10 +73,18 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
       context,
       title: 'Logout',
       message: 'Are you sure you want to logout?',
-    ).then((confirmed) {
+    ).then((confirmed) async {
       if (confirmed == true) {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        authProvider.signOut();
+        await authProvider.signOut();
+        if (mounted) {
+          // Navigate back to welcome screen
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+            (route) => false,
+          );
+        }
       }
     });
   }

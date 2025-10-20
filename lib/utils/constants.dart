@@ -29,6 +29,7 @@ class AppConstants {
   static const String loanRejected = 'rejected';
   static const String loanActive = 'active';
   static const String loanCompleted = 'completed';
+  static const String loanCancelled = 'cancelled';
 
   // Penalty Status
   static const String penaltyPending = 'pending';

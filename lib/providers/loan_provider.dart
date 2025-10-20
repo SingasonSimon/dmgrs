@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/loan_model.dart';
 import '../services/firestore_service.dart';
@@ -653,17 +654,26 @@ class LoanProvider with ChangeNotifier {
   // Helper methods
   void _setLoading(bool loading) {
     _isLoading = loading;
-    notifyListeners();
+    // Use post frame callback to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void _setError(String error) {
     _error = error;
-    notifyListeners();
+    // Use post frame callback to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void _clearError() {
     _error = null;
-    notifyListeners();
+    // Use post frame callback to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   // Clear error manually
@@ -688,6 +698,31 @@ class LoanProvider with ChangeNotifier {
       rejectedBy: 'admin', // TODO: Get actual admin user ID
       rejectionReason: rejectionReason,
     );
+  }
+
+  // Cancel loan request (for member use)
+  Future<bool> cancelLoan(String loanId, String userId) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      // Update loan status to cancelled
+      await FirestoreService.updateLoanStatus(
+        loanId,
+        AppConstants.loanCancelled,
+        notes: 'Cancelled by user',
+      );
+
+      // Reload user loans to reflect the change
+      await loadUserLoans(userId);
+
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setError('Failed to cancel loan: ${e.toString()}');
+      _setLoading(false);
+      return false;
+    }
   }
 
   // Process loan payment with M-Pesa
@@ -734,6 +769,37 @@ class LoanProvider with ChangeNotifier {
       return false;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // Mark a loan payment as completed (for admin use)
+  Future<bool> markLoanPaymentCompleted({
+    required String loanId,
+    required String paymentId,
+    String? mpesaRef,
+  }) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final success = await FirestoreService.markLoanPaymentCompleted(
+        loanId: loanId,
+        paymentId: paymentId,
+        mpesaRef: mpesaRef,
+      );
+
+      if (success) {
+        // Reload loans to reflect changes
+        await loadLoans();
+        notifyListeners();
+      }
+
+      _setLoading(false);
+      return success;
+    } catch (e) {
+      _setError('Failed to mark payment as completed: ${e.toString()}');
+      _setLoading(false);
+      return false;
     }
   }
 }

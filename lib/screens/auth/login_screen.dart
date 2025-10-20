@@ -4,6 +4,8 @@ import '../../providers/auth_provider.dart';
 import '../../utils/validators.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
+import '../admin/admin_home_screen.dart';
+import '../member/member_home_screen.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -51,10 +53,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (success && mounted) {
       AppHelpers.showSuccessSnackBar(context, 'Login successful!');
-      print(
-        'LoginScreen: Login successful, AuthWrapper should handle navigation',
-      );
-      // Don't navigate manually - let AuthWrapper handle it
+      print('LoginScreen: Login successful, navigating to dashboard');
+
+      // Small delay to ensure authentication state is properly set
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Direct navigation based on user role
+      final user = authProvider.currentUser;
+      if (user != null && mounted) {
+        if (user.role == AppConstants.adminRole) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminHomeScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MemberHomeScreen()),
+          );
+        }
+      }
     } else if (mounted) {
       AppHelpers.showErrorSnackBar(
         context,

@@ -6,6 +6,7 @@ import '../../providers/loan_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
+import '../../utils/phone_formatter.dart';
 import '../../widgets/modern_bottom_nav.dart';
 import '../../widgets/modern_navigation_drawer.dart';
 import '../../widgets/modern_card.dart';
@@ -13,10 +14,12 @@ import '../../widgets/simple_chart.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
 import '../shared/notifications_screen.dart';
+import '../shared/welcome_screen.dart';
 import 'admin_loan_screen.dart';
 import 'admin_allocation_screen.dart';
 import 'admin_reports_screen.dart';
 import 'admin_add_user_screen.dart';
+import 'admin_edit_user_screen.dart';
 import 'mpesa_test_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
@@ -98,10 +101,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       context,
       title: 'Logout',
       message: 'Are you sure you want to logout?',
-    ).then((confirmed) {
+    ).then((confirmed) async {
       if (confirmed == true) {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        authProvider.signOut();
+        await authProvider.signOut();
+        if (mounted) {
+          // Navigate back to welcome screen
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+            (route) => false,
+          );
+        }
       }
     });
   }
@@ -155,13 +166,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         return [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const AdminAddUserScreen(),
                 ),
               );
+              // Refresh member list if user was created
+              if (result == true && mounted) {
+                setState(() {
+                  // This will trigger a rebuild and refresh the member list
+                });
+              }
             },
           ),
           IconButton(
@@ -305,7 +322,7 @@ class _AdminDashboardTab extends StatelessWidget {
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return StatCard(
-                        title: 'Total Members',
+                        title: 'Total Users',
                         value: 'Loading...',
                         icon: Icons.people,
                         iconColor: Colors.blue,
@@ -314,7 +331,7 @@ class _AdminDashboardTab extends StatelessWidget {
 
                     if (snapshot.hasError) {
                       return StatCard(
-                        title: 'Total Members',
+                        title: 'Total Users',
                         value: 'Error',
                         icon: Icons.people,
                         iconColor: Colors.red,
@@ -323,7 +340,7 @@ class _AdminDashboardTab extends StatelessWidget {
 
                     final memberCount = snapshot.data ?? 0;
                     return StatCard(
-                      title: 'Total Members',
+                      title: 'Total Users',
                       value: '$memberCount',
                       icon: Icons.people,
                       iconColor: Colors.blue,
@@ -820,188 +837,232 @@ class _MembersTab extends StatefulWidget {
 }
 
 class _MembersTabState extends State<_MembersTab> {
+  static const int _itemsPerPage = 10;
+  int _currentPage = 0;
+  List<UserModel> _allMembers = [];
+  List<UserModel> _displayedMembers = [];
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
     _loadMembers();
   }
 
-  void _loadMembers() {
-    // Load members data when the tab is initialized
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // This will trigger a rebuild with member data
-      setState(() {});
+  void _loadMembers() async {
+    setState(() {
+      _isLoading = true;
     });
+
+    try {
+      final members = await FirestoreService.getActiveMembers();
+      if (mounted) {
+        setState(() {
+          _allMembers = members;
+          _currentPage = 0;
+          _updateDisplayedMembers();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
+
+  void _updateDisplayedMembers() {
+    final startIndex = _currentPage * _itemsPerPage;
+    final endIndex = (startIndex + _itemsPerPage).clamp(0, _allMembers.length);
+    _displayedMembers = _allMembers.sublist(startIndex, endIndex);
+  }
+
+  void _nextPage() {
+    if ((_currentPage + 1) * _itemsPerPage < _allMembers.length) {
+      setState(() {
+        _currentPage++;
+        _updateDisplayedMembers();
+      });
+    }
+  }
+
+  void _previousPage() {
+    if (_currentPage > 0) {
+      setState(() {
+        _currentPage--;
+        _updateDisplayedMembers();
+      });
+    }
+  }
+
+  int get _totalPages => (_allMembers.length / _itemsPerPage).ceil();
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<UserModel>>(
-      future: FirestoreService.getActiveMembers(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Error loading members',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  snapshot.error.toString(),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _loadMembers,
-                  child: const Text('Retry'),
-                ),
-              ],
+    if (_allMembers.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-          );
-        }
+            const SizedBox(height: 16),
+            Text(
+              'No members found',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add your first member to get started',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdminAddUserScreen(),
+                  ),
+                );
+                // Refresh member list if user was created
+                if (result == true && mounted) {
+                  _loadMembers();
+                }
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add Member'),
+            ),
+          ],
+        ),
+      );
+    }
 
-        final members = snapshot.data ?? [];
+    return Column(
+      children: [
+        // Pagination info
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Showing ${_displayedMembers.length} of ${_allMembers.length} members',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              if (_totalPages > 1)
+                Text(
+                  'Page ${_currentPage + 1} of $_totalPages',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+          ),
+        ),
 
-        if (members.isEmpty) {
-          return Center(
-            child: Column(
+        // Members list
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              _loadMembers();
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _displayedMembers.length,
+              itemBuilder: (context, index) {
+                final member = _displayedMembers[index];
+                return _buildEnhancedMemberCard(context, member);
+              },
+            ),
+          ),
+        ),
+
+        // Pagination controls
+        if (_totalPages > 1)
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.people_outline,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                IconButton(
+                  onPressed: _currentPage > 0 ? _previousPage : null,
+                  icon: const Icon(Icons.chevron_left),
+                  tooltip: 'Previous page',
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'No members found',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Add your first member to get started',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AdminAddUserScreen(),
+                const SizedBox(width: 16),
+                ...List.generate(
+                  _totalPages.clamp(0, 5), // Show max 5 page numbers
+                  (index) {
+                    final pageNumber = _currentPage < 3
+                        ? index
+                        : _currentPage - 2 + index;
+
+                    if (pageNumber >= _totalPages)
+                      return const SizedBox.shrink();
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _currentPage = pageNumber;
+                            _updateDisplayedMembers();
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _currentPage == pageNumber
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _currentPage == pageNumber
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.outline,
+                            ),
+                          ),
+                          child: Text(
+                            '${pageNumber + 1}',
+                            style: TextStyle(
+                              color: _currentPage == pageNumber
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(context).colorScheme.onSurface,
+                              fontWeight: _currentPage == pageNumber
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Member'),
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  onPressed:
+                      (_currentPage + 1) * _itemsPerPage < _allMembers.length
+                      ? _nextPage
+                      : null,
+                  icon: const Icon(Icons.chevron_right),
+                  tooltip: 'Next page',
                 ),
               ],
             ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () async {
-            setState(() {});
-          },
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: members.length,
-            itemBuilder: (context, index) {
-              final member = members[index];
-              return ModernCard(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    child: Text(
-                      member.name.isNotEmpty
-                          ? member.name[0].toUpperCase()
-                          : 'M',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  title: Text(
-                    member.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(member.email),
-                      if (member.phone.isNotEmpty) Text(member.phone),
-                      Text(
-                        'Joined: ${AppHelpers.formatDate(member.joinedAt)}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'view':
-                          _viewMemberDetails(context, member);
-                          break;
-                        case 'edit':
-                          _editMember(context, member);
-                          break;
-                        case 'deactivate':
-                          _deactivateMember(context, member);
-                          break;
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'view',
-                        child: ListTile(
-                          leading: Icon(Icons.visibility),
-                          title: Text('View Details'),
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: ListTile(
-                          leading: Icon(Icons.edit),
-                          title: Text('Edit'),
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'deactivate',
-                        child: ListTile(
-                          leading: Icon(Icons.person_off),
-                          title: Text('Deactivate'),
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
           ),
-        );
-      },
+      ],
     );
   }
 
@@ -1014,17 +1075,39 @@ class _MembersTabState extends State<_MembersTab> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailRow('Email', member.email),
-            _buildDetailRow('Phone', member.phone),
-            _buildDetailRow('Role', member.role),
-            _buildDetailRow('Status', member.status),
-            _buildDetailRow('Joined', AppHelpers.formatDate(member.joinedAt)),
+            _buildDetailRow(context, Icons.email, 'Email', member.email),
+            _buildDetailRow(
+              context,
+              Icons.phone,
+              'Phone',
+              PhoneFormatter.getDisplayFormat(member.phone),
+            ),
+            _buildDetailRow(context, Icons.badge, 'Role', member.role),
+            _buildDetailRow(
+              context,
+              Icons.circle,
+              'Status',
+              member.status,
+              valueColor: member.status == 'active'
+                  ? Colors.green
+                  : Colors.orange,
+            ),
+            _buildDetailRow(
+              context,
+              Icons.calendar_today,
+              'Joined',
+              AppHelpers.formatDate(member.joinedAt),
+            ),
             if (member.lastLoginAt != null)
               _buildDetailRow(
+                context,
+                Icons.login,
                 'Last Login',
                 AppHelpers.formatDate(member.lastLoginAt!),
               ),
             _buildDetailRow(
+              context,
+              Icons.warning,
               'Consecutive Misses',
               '${member.consecutiveMisses}',
             ),
@@ -1040,28 +1123,17 @@ class _MembersTabState extends State<_MembersTab> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          Expanded(child: Text(value)),
-        ],
+  void _editMember(BuildContext context, UserModel member) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AdminEditUserScreen(user: member),
       ),
     );
-  }
-
-  void _editMember(BuildContext context, UserModel member) {
-    // TODO: Implement edit member functionality
-    AppHelpers.showSnackBar(context, 'Edit member functionality coming soon');
+    // Refresh member list if user was updated
+    if (result == true && mounted) {
+      _loadMembers();
+    }
   }
 
   void _deactivateMember(BuildContext context, UserModel member) {
@@ -1091,6 +1163,201 @@ class _MembersTabState extends State<_MembersTab> {
         }
       }
     });
+  }
+
+  Widget _buildEnhancedMemberCard(BuildContext context, UserModel member) {
+    final isAdmin = member.role == AppConstants.adminRole;
+    final roleColor = isAdmin ? Colors.red : Colors.blue;
+    final roleIcon = isAdmin ? Icons.admin_panel_settings : Icons.person;
+
+    return ModernCard(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with avatar, name, and role badge
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: roleColor.withOpacity(0.1),
+                  child: Icon(roleIcon, color: roleColor, size: 28),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              member.name,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: roleColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: roleColor.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              member.role.toUpperCase(),
+                              style: TextStyle(
+                                color: roleColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        member.email,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Member details
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: [
+                  if (member.phone.isNotEmpty) ...[
+                    _buildDetailRow(
+                      context,
+                      Icons.phone,
+                      'Phone',
+                      PhoneFormatter.getDisplayFormat(member.phone),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  _buildDetailRow(
+                    context,
+                    Icons.calendar_today,
+                    'Joined',
+                    AppHelpers.formatDate(member.joinedAt),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(
+                    context,
+                    Icons.badge,
+                    'Status',
+                    member.status.toUpperCase(),
+                    valueColor: member.status == 'active'
+                        ? Colors.green
+                        : Colors.orange,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _viewMemberDetails(context, member),
+                    icon: const Icon(Icons.visibility, size: 18),
+                    label: const Text('View'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _editMember(context, member),
+                    icon: const Icon(Icons.edit, size: 18),
+                    label: const Text('Edit'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _deactivateMember(context, member),
+                    icon: const Icon(Icons.person_off, size: 18),
+                    label: const Text('Deactivate'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: valueColor ?? Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/contribution_model.dart';
 import '../models/allocation_model.dart';
@@ -605,14 +606,22 @@ class ContributionProvider with ChangeNotifier {
   // Get member count
   Future<int> getMemberCount() async {
     try {
-      final members = await FirestoreService.getActiveMembers();
-      print('Found ${members.length} active members');
-      for (final member in members) {
+      // Get all active users (both members and admins)
+      final allUsers = await FirestoreService.getAllUsers();
+      final activeUsers = allUsers
+          .where((user) => user.status == 'active')
+          .toList();
+
+      print('Found ${allUsers.length} total users');
+      print('Found ${activeUsers.length} active users');
+
+      for (final user in allUsers) {
         print(
-          'Member: ${member.name} (${member.userId}) - Status: ${member.status}',
+          'User: ${user.name} (${user.userId}) - Role: ${user.role} - Status: ${user.status}',
         );
       }
-      return members.length;
+
+      return activeUsers.length;
     } catch (e) {
       print('Error getting member count: $e');
       return 0;
@@ -622,17 +631,26 @@ class ContributionProvider with ChangeNotifier {
   // Helper methods
   void _setLoading(bool loading) {
     _isLoading = loading;
-    notifyListeners();
+    // Use post frame callback to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void _setError(String error) {
     _error = error;
-    notifyListeners();
+    // Use post frame callback to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void _clearError() {
     _error = null;
-    notifyListeners();
+    // Use post frame callback to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   // Clear error manually

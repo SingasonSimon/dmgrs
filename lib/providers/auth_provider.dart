@@ -161,16 +161,19 @@ class AuthProvider with ChangeNotifier {
   // Sign out
   Future<void> signOut() async {
     try {
-      _setLoading(true);
-      _clearError();
-
+      print('AuthProvider: Starting sign out...');
       await AuthService.signOut();
       _currentUser = null;
+      _isLoading = false;
+      _error = null;
+      print('AuthProvider: Sign out successful');
       notifyListeners();
     } catch (e) {
-      _setError(e.toString());
-    } finally {
-      _setLoading(false);
+      print('AuthProvider: Sign out error: $e');
+      _currentUser = null;
+      _isLoading = false;
+      _error = null;
+      notifyListeners();
     }
   }
 

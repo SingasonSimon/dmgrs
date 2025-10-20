@@ -23,16 +23,24 @@ class FirestoreService {
 
   static Future<UserModel?> getUser(String userId) async {
     try {
+      print('FirestoreService: Getting user with ID: $userId');
       final doc = await _firestore
           .collection(AppConstants.usersCollection)
           .doc(userId)
           .get();
 
       if (doc.exists) {
-        return UserModel.fromDocument(doc);
+        print('FirestoreService: User document exists, creating UserModel');
+        final userModel = UserModel.fromDocument(doc);
+        print(
+          'FirestoreService: UserModel created - ${userModel.name} (${userModel.role})',
+        );
+        return userModel;
       }
+      print('FirestoreService: User document does not exist');
       return null;
     } catch (e) {
+      print('FirestoreService: Error getting user: $e');
       throw Exception('Failed to get user: $e');
     }
   }
@@ -183,6 +191,30 @@ class FirestoreService {
           .set(loan.toMap());
     } catch (e) {
       throw Exception('Failed to create loan: $e');
+    }
+  }
+
+  static Future<void> updateLoanStatus(
+    String loanId,
+    String status, {
+    String? notes,
+  }) async {
+    try {
+      final updateData = <String, dynamic>{
+        'status': status,
+        'updatedAt': Timestamp.now(),
+      };
+
+      if (notes != null) {
+        updateData['notes'] = notes;
+      }
+
+      await _firestore
+          .collection(AppConstants.loansCollection)
+          .doc(loanId)
+          .update(updateData);
+    } catch (e) {
+      throw Exception('Failed to update loan status: $e');
     }
   }
 
@@ -634,6 +666,228 @@ class FirestoreService {
       return true;
     } catch (e) {
       throw Exception('Failed to update loan payment: $e');
+    }
+  }
+
+  // Mark a loan payment as completed
+  static Future<bool> markLoanPaymentCompleted({
+    required String loanId,
+    required String paymentId,
+    String? mpesaRef,
+  }) async {
+    try {
+      final loanDoc = await _firestore
+          .collection(AppConstants.loansCollection)
+          .doc(loanId)
+          .get();
+
+      if (!loanDoc.exists) {
+        throw Exception('Loan not found');
+      }
+
+      final loanData = loanDoc.data()!;
+      final repaymentSchedule = List<Map<String, dynamic>>.from(
+        loanData['repaymentSchedule'] ?? [],
+      );
+
+      // Find and update the specific payment
+      bool paymentFound = false;
+      bool allPaymentsCompleted = true;
+      
+      for (int i = 0; i < repaymentSchedule.length; i++) {
+        if (repaymentSchedule[i]['paymentId'] == paymentId) {
+          repaymentSchedule[i]['isPaid'] = true;
+          repaymentSchedule[i]['paidDate'] = FieldValue.serverTimestamp();
+          repaymentSchedule[i]['status'] = AppConstants.paymentCompleted;
+          if (mpesaRef != null) {
+            repaymentSchedule[i]['mpesaRef'] = mpesaRef;
+          }
+          repaymentSchedule[i]['updatedAt'] = FieldValue.serverTimestamp();
+          paymentFound = true;
+        }
+        
+        // Check if all payments are completed
+        if (!repaymentSchedule[i]['isPaid']) {
+          allPaymentsCompleted = false;
+        }
+      }
+
+      if (!paymentFound) {
+        throw Exception('Payment not found');
+      }
+
+      // Update loan status if all payments are completed
+      String newLoanStatus = loanData['status'];
+      if (allPaymentsCompleted) {
+        newLoanStatus = AppConstants.loanCompleted;
+      }
+
+      // Update the loan document
+      await _firestore
+          .collection(AppConstants.loansCollection)
+          .doc(loanId)
+          .update({
+        'repaymentSchedule': repaymentSchedule,
+        'status': newLoanStatus,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return true;
+    } catch (e) {
+      throw Exception('Failed to mark loan payment as completed: $e');
+    }
+  }
+
+  // Allocation Operations
+  static Future<void> createAllocation(AllocationModel allocation) async {
+    try {
+      await _firestore
+          .collection(AppConstants.allocationsCollection)
+          .doc(allocation.allocationId)
+          .set(allocation.toMap());
+    } catch (e) {
+      throw Exception('Failed to create allocation: $e');
+    }
+  }
+
+  static Future<List<AllocationModel>> getAllocations() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.allocationsCollection)
+          .orderBy('date', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => AllocationModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get allocations: $e');
+    }
+  }
+
+  static Future<List<AllocationModel>> getAllocationsByCycle(String cycleId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.allocationsCollection)
+          .where('cycleId', isEqualTo: cycleId)
+          .orderBy('date', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => AllocationModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get allocations by cycle: $e');
+    }
+  }
+
+  static Future<void> updateAllocation(AllocationModel allocation) async {
+    try {
+      await _firestore
+          .collection(AppConstants.allocationsCollection)
+          .doc(allocation.allocationId)
+          .update(allocation.toMap());
+    } catch (e) {
+      throw Exception('Failed to update allocation: $e');
+    }
+  }
+
+  // Cycle Operations
+  static Future<void> createCycle(CycleModel cycle) async {
+    try {
+      await _firestore
+          .collection(AppConstants.cyclesCollection)
+          .doc(cycle.cycleId)
+          .set(cycle.toMap());
+    } catch (e) {
+      throw Exception('Failed to create cycle: $e');
+    }
+  }
+
+  static Future<CycleModel?> getCurrentCycle() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.cyclesCollection)
+          .where('isActive', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return CycleModel.fromDocument(querySnapshot.docs.first);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get current cycle: $e');
+    }
+  }
+
+  static Future<List<CycleModel>> getAllCycles() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.cyclesCollection)
+          .orderBy('startDate', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => CycleModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get all cycles: $e');
+    }
+  }
+
+  static Future<void> updateCycle(CycleModel cycle) async {
+    try {
+      await _firestore
+          .collection(AppConstants.cyclesCollection)
+          .doc(cycle.cycleId)
+          .update(cycle.toMap());
+    } catch (e) {
+      throw Exception('Failed to update cycle: $e');
+    }
+  }
+
+  // Generate allocations for a cycle
+  static Future<void> generateCycleAllocations(CycleModel cycle) async {
+    try {
+      final batch = _firestore.batch();
+      
+      // Get total contributions for the cycle period
+      final contributionsSnapshot = await _firestore
+          .collection(AppConstants.contributionsCollection)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(cycle.startDate))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(cycle.endDate))
+          .where('status', isEqualTo: AppConstants.paymentCompleted)
+          .get();
+
+      final totalContributions = contributionsSnapshot.docs
+          .fold(0.0, (sum, doc) => sum + (doc.data()['amount'] ?? 0.0));
+
+      final allocationAmount = totalContributions * AppConstants.memberDistributionPercentage;
+
+      // Create allocations for each member
+      for (int i = 0; i < cycle.members.length; i++) {
+        final memberId = cycle.members[i];
+        final allocationId = '${cycle.cycleId}_${memberId}_${DateTime.now().millisecondsSinceEpoch}';
+        
+        final allocation = AllocationModel(
+          allocationId: allocationId,
+          userId: memberId,
+          amount: allocationAmount,
+          date: DateTime.now(),
+          cycleId: cycle.cycleId,
+        );
+
+        final allocationRef = _firestore
+            .collection(AppConstants.allocationsCollection)
+            .doc(allocationId);
+        
+        batch.set(allocationRef, allocation.toMap());
+      }
+
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to generate cycle allocations: $e');
     }
   }
 }

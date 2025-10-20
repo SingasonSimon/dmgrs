@@ -4,6 +4,8 @@ import '../../providers/auth_provider.dart';
 import '../../utils/validators.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
+import '../../utils/phone_formatter.dart';
+import '../member/member_home_screen.dart';
 import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -53,7 +55,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       name: _nameController.text.trim(),
-      phone: _phoneController.text.trim(),
+      phone: PhoneFormatter.formatPhoneNumber(_phoneController.text.trim()),
     );
 
     if (success && mounted) {
@@ -61,11 +63,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
         context,
         'Account created successfully! You are now logged in.',
       );
-      print(
-        'SignupScreen: Signup successful, AuthWrapper should handle navigation',
-      );
-      // Don't navigate - let AuthWrapper handle the navigation
-      // The user is now authenticated and AuthWrapper will redirect to dashboard
+      print('SignupScreen: Signup successful, navigating to dashboard');
+
+      // Small delay to ensure authentication state is properly set
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Direct navigation to member dashboard (new users are always members)
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MemberHomeScreen()),
+        );
+      }
     } else if (mounted) {
       AppHelpers.showErrorSnackBar(
         context,
@@ -154,10 +163,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
+                  inputFormatters: PhoneFormatter.getInputFormatters(),
+                  decoration: InputDecoration(
                     labelText: 'Phone Number',
-                    hintText: 'e.g., 0712345678',
-                    prefixIcon: Icon(Icons.phone_outlined),
+                    hintText: PhoneFormatter.getInputHint(),
+                    prefixIcon: const Icon(Icons.phone_outlined),
+                    prefixText: '+254 ',
                   ),
                   validator: Validators.validatePhone,
                 ),

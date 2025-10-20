@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
+import '../../utils/phone_formatter.dart';
 import '../../models/user_model.dart';
 import '../../widgets/modern_card.dart';
 
@@ -193,20 +194,22 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
             TextFormField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
+              inputFormatters: PhoneFormatter.getInputFormatters(),
               decoration: InputDecoration(
                 labelText: 'Phone Number',
                 prefixIcon: const Icon(Icons.phone),
+                prefixText: '+254 ',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                hintText: '+254 700 000 000',
+                hintText: PhoneFormatter.getInputHint(),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Please enter a phone number';
                 }
-                if (value.trim().length < 10) {
-                  return 'Please enter a valid phone number';
+                if (!PhoneFormatter.isValidKenyanPhone(value)) {
+                  return 'Please enter a valid Kenyan phone number';
                 }
                 return null;
               },
@@ -397,7 +400,7 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
           userId: userCredential.user!.uid,
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
-          phone: _phoneController.text.trim(),
+          phone: PhoneFormatter.formatPhoneNumber(_phoneController.text.trim()),
           role: _selectedRole,
           joinedAt: DateTime.now(),
           status: 'active',
@@ -412,8 +415,11 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
           // Clear form
           _clearForm();
 
-          // Navigate back
-          Navigator.pop(context);
+          // Navigate back with refresh indicator
+          Navigator.pop(
+            context,
+            true,
+          ); // Return true to indicate refresh needed
         }
       }
     } catch (e) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'phone_formatter.dart';
 
 class Validators {
   // Email validation
@@ -64,19 +65,11 @@ class Validators {
       return 'Phone number is required';
     }
 
-    // Remove any spaces or special characters
-    String cleanPhone = value.replaceAll(RegExp(r'[^\d]'), '');
-
-    // Check if it's a valid Kenyan phone number
-    if (cleanPhone.length == 10 && cleanPhone.startsWith('0')) {
-      return null; // Valid format: 07xxxxxxxx
-    } else if (cleanPhone.length == 12 && cleanPhone.startsWith('254')) {
-      return null; // Valid format: 2547xxxxxxxx
-    } else if (cleanPhone.length == 13 && cleanPhone.startsWith('+254')) {
-      return null; // Valid format: +2547xxxxxxxx
+    if (!PhoneFormatter.isValidKenyanPhone(value)) {
+      return 'Please enter a valid Kenyan phone number (e.g., 712345678)';
     }
 
-    return 'Please enter a valid Kenyan phone number (e.g., 0712345678)';
+    return null;
   }
 
   // Amount validation

@@ -5,6 +5,7 @@ import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
 import '../../widgets/modern_card.dart';
 import '../../providers/loan_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/mpesa_service.dart';
 
 class LoanRepaymentScreen extends StatefulWidget {
@@ -351,12 +352,29 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
                   ],
                 ),
               ),
-              if (!payment.isPaid)
+              if (!payment.isPaid) ...[
+                // Admin mark as paid button
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    final isAdmin = authProvider.currentUser?.role == AppConstants.adminRole;
+                    if (isAdmin) {
+                      return IconButton(
+                        onPressed: () => _markPaymentAsPaid(payment),
+                        icon: const Icon(Icons.check_circle),
+                        color: Colors.green,
+                        tooltip: 'Mark as Paid (Admin)',
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+                // Regular payment button
                 IconButton(
                   onPressed: () => _makePayment(payment),
                   icon: const Icon(Icons.payment),
                   color: Theme.of(context).colorScheme.primary,
                 ),
+              ],
             ],
           ),
         ),
@@ -522,6 +540,46 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
   void _viewPaymentHistory() {
     // TODO: Implement payment history screen
     AppHelpers.showSnackBar(context, 'Payment history feature coming soon!');
+  }
+
+  void _markPaymentAsPaid(RepaymentSchedule payment) {
+    AppHelpers.showConfirmationDialog(
+      context,
+      title: 'Mark Payment as Paid',
+      message: 'Are you sure you want to mark this payment of ${AppHelpers.formatCurrency(payment.amount)} as paid?',
+    ).then((confirmed) async {
+      if (confirmed == true) {
+        try {
+          final loanProvider = Provider.of<LoanProvider>(context, listen: false);
+          final success = await loanProvider.markLoanPaymentCompleted(
+            loanId: widget.loan.loanId,
+            paymentId: payment.paymentId,
+          );
+
+          if (mounted) {
+            if (success) {
+              AppHelpers.showSuccessSnackBar(
+                context,
+                'Payment marked as completed successfully!',
+              );
+              setState(() {}); // Refresh the UI
+            } else {
+              AppHelpers.showErrorSnackBar(
+                context,
+                'Failed to mark payment as completed: ${loanProvider.error ?? "Unknown error"}',
+              );
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            AppHelpers.showErrorSnackBar(
+              context,
+              'Error marking payment as completed: ${e.toString()}',
+            );
+          }
+        }
+      }
+    });
   }
 
   void _processPayment(RepaymentSchedule payment) {

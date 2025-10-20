@@ -800,6 +800,13 @@ class _DisburseLoanDialogState extends State<_DisburseLoanDialog> {
 
     try {
       final loanProvider = Provider.of<LoanProvider>(context, listen: false);
+
+      // Show loading dialog
+      AppHelpers.showLoadingDialog(
+        context,
+        message: 'Processing disbursement...',
+      );
+
       final success = await loanProvider.disburseLoan(
         loanId: widget.loan.loanId,
         disbursementMethod: _disbursementMethod,
@@ -807,6 +814,11 @@ class _DisburseLoanDialogState extends State<_DisburseLoanDialog> {
             ? null
             : _mpesaRefController.text.trim(),
       );
+
+      // Hide loading dialog
+      if (mounted) {
+        AppHelpers.hideLoadingDialog(context);
+      }
 
       if (mounted) {
         if (success) {
@@ -817,15 +829,29 @@ class _DisburseLoanDialogState extends State<_DisburseLoanDialog> {
           Navigator.pop(context);
           widget.onLoanDisbursed();
         } else {
+          final errorMessage = AppHelpers.getErrorMessage(
+            loanProvider.error ?? "Unknown error",
+          );
           AppHelpers.showErrorSnackBar(
             context,
-            'Failed to disburse loan: ${loanProvider.error ?? "Unknown error"}',
+            'Failed to disburse loan: $errorMessage',
           );
         }
       }
     } catch (e) {
+      // Hide loading dialog if still showing
       if (mounted) {
-        AppHelpers.showErrorSnackBar(context, 'Failed to disburse loan: $e');
+        try {
+          AppHelpers.hideLoadingDialog(context);
+        } catch (_) {
+          // Dialog might already be closed
+        }
+
+        final errorMessage = AppHelpers.getErrorMessage(e);
+        AppHelpers.showErrorSnackBar(
+          context,
+          'Failed to disburse loan: $errorMessage',
+        );
       }
     } finally {
       if (mounted) {

@@ -6,6 +6,7 @@ import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
 import '../../services/image_picker_service.dart';
 import '../../services/s3_service.dart';
+import '../shared/welcome_screen.dart';
 import 'change_password_screen.dart';
 import 'edit_profile_screen.dart';
 
@@ -399,7 +400,6 @@ class ProfileScreen extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
               final authProvider = Provider.of<AuthProvider>(
                 context,
                 listen: false,
@@ -409,6 +409,14 @@ class ProfileScreen extends StatelessWidget {
                 AppHelpers.showSuccessSnackBar(
                   context,
                   'Signed out successfully',
+                );
+                // Navigate back to welcome screen
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WelcomeScreen(),
+                  ),
+                  (route) => false,
                 );
               }
             },

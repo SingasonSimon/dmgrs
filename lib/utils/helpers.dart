@@ -175,25 +175,85 @@ class AppHelpers {
   static void showSnackBar(
     BuildContext context,
     String message, {
-    Color? color,
+    Color? backgroundColor,
+    Color? textColor,
+    IconData? icon,
+    Duration? duration,
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: color ?? Colors.green,
-        duration: const Duration(seconds: 3),
+        content: Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: textColor ?? Colors.white, size: 20),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: textColor ?? Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: backgroundColor ?? Colors.green,
+        duration: duration ?? const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
 
-  // Show error snackbar
+  // Show error snackbar with enhanced styling
   static void showErrorSnackBar(BuildContext context, String message) {
-    showSnackBar(context, message, color: Colors.red);
+    showSnackBar(
+      context,
+      message,
+      backgroundColor: Colors.red.shade600,
+      textColor: Colors.white,
+      icon: Icons.error_outline,
+      duration: const Duration(seconds: 4),
+    );
   }
 
-  // Show success snackbar
+  // Show success snackbar with enhanced styling
   static void showSuccessSnackBar(BuildContext context, String message) {
-    showSnackBar(context, message, color: Colors.green);
+    showSnackBar(
+      context,
+      message,
+      backgroundColor: Colors.green.shade600,
+      textColor: Colors.white,
+      icon: Icons.check_circle_outline,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  // Show info snackbar
+  static void showInfoSnackBar(BuildContext context, String message) {
+    showSnackBar(
+      context,
+      message,
+      backgroundColor: Colors.blue.shade600,
+      textColor: Colors.white,
+      icon: Icons.info_outline,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  // Show warning snackbar
+  static void showWarningSnackBar(BuildContext context, String message) {
+    showSnackBar(
+      context,
+      message,
+      backgroundColor: Colors.orange.shade600,
+      textColor: Colors.white,
+      icon: Icons.warning_outlined,
+      duration: const Duration(seconds: 4),
+    );
   }
 
   // Show loading dialog
@@ -243,6 +303,116 @@ class AppHelpers {
         ],
       ),
     );
+  }
+
+  // Show error dialog with retry option
+  static Future<bool?> showErrorDialog(
+    BuildContext context, {
+    required String title,
+    required String message,
+    String? errorDetails,
+    String retryText = 'Retry',
+    String dismissText = 'Dismiss',
+    VoidCallback? onRetry,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red.shade600),
+            const SizedBox(width: 8),
+            Text(title),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            if (errorDetails != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Details: $errorDetails',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(dismissText),
+          ),
+          if (onRetry != null)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(true);
+                onRetry();
+              },
+              child: Text(retryText),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Handle common errors with user-friendly messages
+  static String getErrorMessage(dynamic error) {
+    final errorString = error.toString().toLowerCase();
+
+    if (errorString.contains('network') || errorString.contains('connection')) {
+      return 'Network connection error. Please check your internet connection and try again.';
+    } else if (errorString.contains('timeout')) {
+      return 'Request timed out. Please try again.';
+    } else if (errorString.contains('permission')) {
+      return 'Permission denied. Please check your account permissions.';
+    } else if (errorString.contains('not found')) {
+      return 'The requested resource was not found.';
+    } else if (errorString.contains('unauthorized') ||
+        errorString.contains('forbidden')) {
+      return 'You are not authorized to perform this action.';
+    } else if (errorString.contains('validation') ||
+        errorString.contains('invalid')) {
+      return 'Invalid data provided. Please check your input and try again.';
+    } else if (errorString.contains('server') ||
+        errorString.contains('internal')) {
+      return 'Server error occurred. Please try again later.';
+    } else {
+      return 'An unexpected error occurred. Please try again.';
+    }
+  }
+
+  // Show network error dialog
+  static Future<void> showNetworkErrorDialog(
+    BuildContext context, {
+    VoidCallback? onRetry,
+  }) {
+    return showErrorDialog(
+      context,
+      title: 'Connection Error',
+      message:
+          'Unable to connect to the server. Please check your internet connection.',
+      retryText: 'Retry',
+      onRetry: onRetry,
+    ).then((_) {});
+  }
+
+  // Show validation error dialog
+  static Future<void> showValidationErrorDialog(
+    BuildContext context,
+    String message, {
+    VoidCallback? onRetry,
+  }) {
+    return showErrorDialog(
+      context,
+      title: 'Validation Error',
+      message: message,
+      retryText: 'Fix',
+      onRetry: onRetry,
+    ).then((_) {});
   }
 
   // Generate random ID

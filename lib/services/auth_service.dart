@@ -332,11 +332,26 @@ class AuthService {
 
   // Stream of current user model
   static Stream<UserModel?> getCurrentUserModelStream() {
-    return _auth.authStateChanges().asyncMap((user) async {
-      if (user != null) {
-        return await FirestoreService.getUser(user.uid);
-      }
-      return null;
-    });
+    return _auth
+        .authStateChanges()
+        .asyncMap((user) async {
+          print('AuthService: Stream - Firebase user: ${user?.uid}');
+          if (user != null) {
+            print('AuthService: Stream - Fetching user data from Firestore...');
+            final userModel = await FirestoreService.getUser(user.uid);
+            print(
+              'AuthService: Stream - User data: ${userModel?.name} (${userModel?.role})',
+            );
+            return userModel;
+          }
+          print('AuthService: Stream - No Firebase user');
+          return null;
+        })
+        .distinct((previous, next) {
+          // Only emit if the user ID or authentication status has changed
+          if (previous == null && next == null) return true;
+          if (previous == null || next == null) return false;
+          return previous.userId == next.userId;
+        });
   }
 }

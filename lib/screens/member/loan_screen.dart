@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/loan_provider.dart';
+import '../../models/loan_model.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
 import 'loan_repayment_screen.dart';
@@ -273,12 +274,41 @@ class _LoanScreenState extends State<LoanScreen> {
     showDialog(context: context, builder: (context) => _RequestLoanDialog());
   }
 
-  void _cancelLoanRequest(loan) {
-    // TODO: Implement cancel loan request logic
-    AppHelpers.showSnackBar(
+  void _cancelLoanRequest(LoanModel loan) {
+    AppHelpers.showConfirmationDialog(
       context,
-      'Cancel loan request functionality coming soon!',
-    );
+      title: 'Cancel Loan Request',
+      message:
+          'Are you sure you want to cancel this loan request? This action cannot be undone.',
+    ).then((confirmed) async {
+      if (confirmed == true) {
+        try {
+          final loanProvider = Provider.of<LoanProvider>(
+            context,
+            listen: false,
+          );
+          final authProvider = Provider.of<AuthProvider>(
+            context,
+            listen: false,
+          );
+          await loanProvider.cancelLoan(loan.loanId, authProvider.userId);
+
+          if (mounted) {
+            AppHelpers.showSuccessSnackBar(
+              context,
+              'Loan request cancelled successfully',
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            AppHelpers.showErrorSnackBar(
+              context,
+              'Failed to cancel loan request: ${e.toString()}',
+            );
+          }
+        }
+      }
+    });
   }
 }
 
