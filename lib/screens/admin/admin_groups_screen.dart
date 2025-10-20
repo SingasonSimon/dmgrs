@@ -697,23 +697,85 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
                           user['userId'],
                         );
 
+                        final userStatus = user['status'] ?? 'active';
+                        final isInactive = userStatus != 'active';
+
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.1),
+                              backgroundColor: isInactive
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.error.withValues(alpha: 0.1)
+                                  : Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.1),
                               child: Text(
                                 (user['name'] ?? '?')[0].toUpperCase(),
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.primary,
+                                  color: isInactive
+                                      ? Theme.of(context).colorScheme.error
+                                      : Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
                             title: Text(user['name'] ?? 'Unknown'),
-                            subtitle: Text(user['phone'] ?? ''),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(user['phone'] ?? ''),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isInactive
+                                            ? Theme.of(context)
+                                                  .colorScheme
+                                                  .error
+                                                  .withValues(alpha: 0.1)
+                                            : Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        userStatus.toUpperCase(),
+                                        style: TextStyle(
+                                          color: isInactive
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.error
+                                              : Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      user['role'] ?? 'member',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                             trailing: isAlreadyMember
                                 ? Container(
                                     padding: const EdgeInsets.symmetric(
@@ -730,6 +792,27 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
                                       'Already Member',
                                       style: TextStyle(
                                         color: Colors.green,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  )
+                                : isInactive
+                                ? Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.error
+                                          .withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Inactive',
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.error,
                                         fontSize: 12,
                                       ),
                                     ),

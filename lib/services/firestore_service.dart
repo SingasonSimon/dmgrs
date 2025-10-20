@@ -212,16 +212,16 @@ class FirestoreService {
     try {
       final queryLower = query.toLowerCase();
 
-      // Use Firestore compound queries for better performance
-      // Search by name prefix
+      // Use Firestore queries on existing fields
+      // Search by name (case-insensitive)
       final nameQuery = await _firestore
           .collection(AppConstants.usersCollection)
-          .where('name_lower', isGreaterThanOrEqualTo: queryLower)
-          .where('name_lower', isLessThan: queryLower + 'z')
-          .limit(20)
+          .where('name', isGreaterThanOrEqualTo: query)
+          .where('name', isLessThan: query + 'z')
+          .limit(15)
           .get();
 
-      // Search by phone if name search didn't yield enough results
+      // Search by phone
       final phoneQuery = await _firestore
           .collection(AppConstants.usersCollection)
           .where('phone', isGreaterThanOrEqualTo: query)
@@ -234,29 +234,43 @@ class FirestoreService {
 
       // Add name search results
       for (final doc in nameQuery.docs) {
-        if (seenIds.length >= 25) break;
+        if (seenIds.length >= 20) break;
         final data = doc.data();
-        results.add({
-          'userId': doc.id,
-          'name': data['name'],
-          'phone': data['phone'],
-          'email': data['email'],
-        });
-        seenIds.add(doc.id);
-      }
+        final name = (data['name'] ?? '').toString().toLowerCase();
 
-      // Add phone search results (excluding already seen users)
-      for (final doc in phoneQuery.docs) {
-        if (seenIds.length >= 25) break;
-        if (!seenIds.contains(doc.id)) {
-          final data = doc.data();
+        // Filter results that actually contain the query
+        if (name.contains(queryLower)) {
           results.add({
             'userId': doc.id,
             'name': data['name'],
             'phone': data['phone'],
             'email': data['email'],
+            'status': data['status'] ?? 'active',
+            'role': data['role'] ?? 'member',
           });
           seenIds.add(doc.id);
+        }
+      }
+
+      // Add phone search results (excluding already seen users)
+      for (final doc in phoneQuery.docs) {
+        if (seenIds.length >= 20) break;
+        if (!seenIds.contains(doc.id)) {
+          final data = doc.data();
+          final phone = (data['phone'] ?? '').toString().toLowerCase();
+
+          // Filter results that actually contain the query
+          if (phone.contains(queryLower)) {
+            results.add({
+              'userId': doc.id,
+              'name': data['name'],
+              'phone': data['phone'],
+              'email': data['email'],
+              'status': data['status'] ?? 'active',
+              'role': data['role'] ?? 'member',
+            });
+            seenIds.add(doc.id);
+          }
         }
       }
 
@@ -292,6 +306,8 @@ class FirestoreService {
             'name': data['name'],
             'phone': data['phone'],
             'email': data['email'],
+            'status': data['status'] ?? 'active',
+            'role': data['role'] ?? 'member',
           });
         }
 

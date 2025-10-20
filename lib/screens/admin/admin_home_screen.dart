@@ -855,10 +855,11 @@ class _MembersTabState extends State<_MembersTab> {
     });
 
     try {
-      final members = await FirestoreService.getActiveMembers();
+      // Load all members instead of just active ones
+      final allMembers = await FirestoreService.getAllUsers();
       if (mounted) {
         setState(() {
-          _allMembers = members;
+          _allMembers = allMembers;
           _currentPage = 0;
           _updateDisplayedMembers();
           _isLoading = false;
@@ -1232,27 +1233,66 @@ class _MembersTabState extends State<_MembersTab> {
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: roleColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: roleColor.withOpacity(0.3),
-                                width: 1,
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: roleColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: roleColor.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  member.role.toUpperCase(),
+                                  style: TextStyle(
+                                    color: roleColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              member.role.toUpperCase(),
-                              style: TextStyle(
-                                color: roleColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: member.status == 'active'
+                                      ? Colors.green.withOpacity(0.1)
+                                      : member.status == 'inactive'
+                                          ? Colors.orange.withOpacity(0.1)
+                                          : Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: member.status == 'active'
+                                        ? Colors.green.withOpacity(0.3)
+                                        : member.status == 'inactive'
+                                            ? Colors.orange.withOpacity(0.3)
+                                            : Colors.red.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  member.status.toUpperCase(),
+                                  style: TextStyle(
+                                    color: member.status == 'active'
+                                        ? Colors.green
+                                        : member.status == 'inactive'
+                                            ? Colors.orange
+                                            : Colors.red,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ],
                       ),
@@ -1305,7 +1345,9 @@ class _MembersTabState extends State<_MembersTab> {
                     member.status.toUpperCase(),
                     valueColor: member.status == 'active'
                         ? Colors.green
-                        : Colors.orange,
+                        : member.status == 'inactive'
+                            ? Colors.orange
+                            : Colors.red,
                   ),
                 ],
               ),
@@ -1342,10 +1384,26 @@ class _MembersTabState extends State<_MembersTab> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
+                // Reactivation button for inactive members
+                if (member.status != 'active')
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _reactivateMember(context, member),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text('Reactivate'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  )
+                else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
                         onPressed: () => _deactivateMember(context, member),
                         icon: const Icon(Icons.person_off, size: 18),
                         label: const Text('Deactivate'),
@@ -1353,6 +1411,19 @@ class _MembersTabState extends State<_MembersTab> {
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           foregroundColor: Colors.orange,
                           side: const BorderSide(color: Colors.orange),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _deleteMember(context, member),
+                        icon: const Icon(Icons.delete_forever, size: 18),
+                        label: const Text('Delete'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
                         ),
                       ),
                     ),
@@ -1377,6 +1448,64 @@ class _MembersTabState extends State<_MembersTab> {
         ),
       ),
     );
+  }
+
+  void _reactivateMember(BuildContext context, UserModel member) async {
+    try {
+      // Update user status to active
+      final updatedUser = member.copyWith(status: 'active');
+      await FirestoreService.updateUser(updatedUser);
+
+      // Reload members to reflect the change
+      _loadMembers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${member.name} has been reactivated'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to reactivate member: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _deactivateMember(BuildContext context, UserModel member) async {
+    try {
+      // Update user status to inactive
+      final updatedUser = member.copyWith(status: 'inactive');
+      await FirestoreService.updateUser(updatedUser);
+
+      // Reload members to reflect the change
+      _loadMembers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${member.name} has been deactivated'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to deactivate member: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildDetailRow(

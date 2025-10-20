@@ -271,27 +271,65 @@ class SimpleLineChart extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          // Month labels
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: data.map((item) {
-              return Expanded(
-                child: Text(
-                  item.label,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 10,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }).toList(),
+          // Month labels and values
+          Column(
+            children: [
+              // Value labels above month labels
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: data.map((item) {
+                  final formattedValue = _formatChartValue(item.value);
+                  return Expanded(
+                    child: Text(
+                      formattedValue,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 4),
+              // Month labels
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: data.map((item) {
+                  return Expanded(
+                    child: Text(
+                      item.label,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 10,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  String _formatChartValue(double value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    } else if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}K';
+    } else if (value == 0) {
+      return '0';
+    } else {
+      return value.toStringAsFixed(0);
+    }
   }
 }
 
