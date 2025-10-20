@@ -10,6 +10,84 @@ import '../utils/constants.dart';
 class FirestoreService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // Simple in-memory cache for frequently accessed data
+  static final Map<String, dynamic> _cache = {};
+  static final Map<String, DateTime> _cacheTimestamps = {};
+  static const Duration _cacheDuration = Duration(minutes: 5);
+
+  // Helper method to get cached data or fetch fresh
+  static T? _getCachedData<T>(String key) {
+    final timestamp = _cacheTimestamps[key];
+    if (timestamp != null &&
+        DateTime.now().difference(timestamp) < _cacheDuration) {
+      return _cache[key] as T?;
+    }
+    return null;
+  }
+
+  // Helper method to cache data
+  static void _setCachedData(String key, dynamic data) {
+    _cache[key] = data;
+    _cacheTimestamps[key] = DateTime.now();
+  }
+
+  // Clear cache
+  static void clearCache() {
+    _cache.clear();
+    _cacheTimestamps.clear();
+  }
+
+  // Batch operations for better performance
+  static Future<void> batchUpdateUsers(
+    List<Map<String, dynamic>> updates,
+  ) async {
+    try {
+      final batch = _firestore.batch();
+
+      for (final update in updates) {
+        final userRef = _firestore
+            .collection(AppConstants.usersCollection)
+            .doc(update['userId']);
+        batch.update(userRef, update['data']);
+      }
+
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to batch update users: $e');
+    }
+  }
+
+  static Future<List<UserModel>> getMultipleUsers(List<String> userIds) async {
+    try {
+      if (userIds.isEmpty) return [];
+
+      // Use in query for multiple users (limited to 10 in Firestore)
+      final chunks = <List<String>>[];
+      for (var i = 0; i < userIds.length; i += 10) {
+        chunks.add(
+          userIds.sublist(i, i + 10 > userIds.length ? userIds.length : i + 10),
+        );
+      }
+
+      final results = <UserModel>[];
+
+      for (final chunk in chunks) {
+        final querySnapshot = await _firestore
+            .collection(AppConstants.usersCollection)
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+
+        results.addAll(
+          querySnapshot.docs.map((doc) => UserModel.fromDocument(doc)),
+        );
+      }
+
+      return results;
+    } catch (e) {
+      throw Exception('Failed to get multiple users: $e');
+    }
+  }
+
   // User Operations
   static Future<void> createUser(UserModel user) async {
     try {
@@ -100,9 +178,16 @@ class FirestoreService {
     }
   }
 
-  // Get user name by ID
+  // Get user name by ID (with caching)
   static Future<String?> getUserName(String userId) async {
     try {
+      // Check cache first
+      final cacheKey = 'user_name_$userId';
+      final cached = _getCachedData<String>(cacheKey);
+      if (cached != null) {
+        return cached;
+      }
+
       final doc = await _firestore
           .collection(AppConstants.usersCollection)
           .doc(userId)
@@ -110,7 +195,11 @@ class FirestoreService {
 
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
-        return data['name'] as String?;
+        final name = data['name'] as String?;
+        if (name != null) {
+          _setCachedData(cacheKey, name);
+        }
+        return name;
       }
       return null;
     } catch (e) {
@@ -118,12 +207,73 @@ class FirestoreService {
     }
   }
 
-  // Search users by name or phone
+  // Search users by name or phone (optimized)
   static Future<List<Map<String, dynamic>>> searchUsers(String query) async {
     try {
       final queryLower = query.toLowerCase();
 
-      // Get all users first (for demo purposes - in production, you'd want proper search indexing)
+      // Use Firestore compound queries for better performance
+      // Search by name prefix
+      final nameQuery = await _firestore
+          .collection(AppConstants.usersCollection)
+          .where('name_lower', isGreaterThanOrEqualTo: queryLower)
+          .where('name_lower', isLessThan: queryLower + 'z')
+          .limit(20)
+          .get();
+
+      // Search by phone if name search didn't yield enough results
+      final phoneQuery = await _firestore
+          .collection(AppConstants.usersCollection)
+          .where('phone', isGreaterThanOrEqualTo: query)
+          .where('phone', isLessThan: query + 'z')
+          .limit(10)
+          .get();
+
+      final results = <Map<String, dynamic>>[];
+      final seenIds = <String>{};
+
+      // Add name search results
+      for (final doc in nameQuery.docs) {
+        if (seenIds.length >= 25) break;
+        final data = doc.data();
+        results.add({
+          'userId': doc.id,
+          'name': data['name'],
+          'phone': data['phone'],
+          'email': data['email'],
+        });
+        seenIds.add(doc.id);
+      }
+
+      // Add phone search results (excluding already seen users)
+      for (final doc in phoneQuery.docs) {
+        if (seenIds.length >= 25) break;
+        if (!seenIds.contains(doc.id)) {
+          final data = doc.data();
+          results.add({
+            'userId': doc.id,
+            'name': data['name'],
+            'phone': data['phone'],
+            'email': data['email'],
+          });
+          seenIds.add(doc.id);
+        }
+      }
+
+      return results;
+    } catch (e) {
+      // Fallback to simple search if compound queries fail
+      return _searchUsersFallback(query);
+    }
+  }
+
+  // Fallback search method for when compound queries aren't available
+  static Future<List<Map<String, dynamic>>> _searchUsersFallback(
+    String query,
+  ) async {
+    try {
+      final queryLower = query.toLowerCase();
+
       final querySnapshot = await _firestore
           .collection(AppConstants.usersCollection)
           .limit(50)
@@ -144,6 +294,8 @@ class FirestoreService {
             'email': data['email'],
           });
         }
+
+        if (results.length >= 25) break;
       }
 
       return results;
