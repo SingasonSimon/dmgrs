@@ -98,12 +98,40 @@ class GroupModel {
     );
   }
 
-  // Helper methods
+  // Validation methods
+  static String? validateGroupName(String? name) {
+    if (name == null || name.trim().isEmpty) {
+      return 'Group name is required';
+    }
+    if (name.trim().length < 3) {
+      return 'Group name must be at least 3 characters';
+    }
+    if (name.trim().length > 50) {
+      return 'Group name must be less than 50 characters';
+    }
+    return null;
+  }
+
+  static String? validateDescription(String? description) {
+    if (description != null && description.length > 500) {
+      return 'Description must be less than 500 characters';
+    }
+    return null;
+  }
+
+  // Business logic methods
   bool get hasMembers => memberIds.isNotEmpty;
   int get memberCount => memberIds.length;
   bool isMember(String userId) => memberIds.contains(userId);
   bool isAdmin(String userId) => adminId == userId;
   bool canManage(String userId) => isAdmin(userId) || isMember(userId);
+
+  // Advanced helper methods
+  bool get canAcceptNewMembers =>
+      isActive && memberCount < 100; // Example limit
+  bool get needsAdminAttention => !isActive || memberCount == 0;
+  String get statusText => isActive ? 'Active' : 'Inactive';
+  DateTime get lastActivity => updatedAt ?? createdAt;
 
   @override
   String toString() {

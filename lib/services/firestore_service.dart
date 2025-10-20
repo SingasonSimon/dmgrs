@@ -100,6 +100,70 @@ class FirestoreService {
     }
   }
 
+  // Get user name by ID
+  static Future<String?> getUserName(String userId) async {
+    try {
+      final doc = await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        return data['name'] as String?;
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get user name: $e');
+    }
+  }
+
+  // Search users by name or phone
+  static Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+    try {
+      final queryLower = query.toLowerCase();
+
+      // Get all users first (for demo purposes - in production, you'd want proper search indexing)
+      final querySnapshot = await _firestore
+          .collection(AppConstants.usersCollection)
+          .limit(50)
+          .get();
+
+      final results = <Map<String, dynamic>>[];
+
+      for (final doc in querySnapshot.docs) {
+        final data = doc.data();
+        final name = (data['name'] ?? '').toString().toLowerCase();
+        final phone = (data['phone'] ?? '').toString().toLowerCase();
+
+        if (name.contains(queryLower) || phone.contains(queryLower)) {
+          results.add({
+            'userId': doc.id,
+            'name': data['name'],
+            'phone': data['phone'],
+            'email': data['email'],
+          });
+        }
+      }
+
+      return results;
+    } catch (e) {
+      throw Exception('Failed to search users: $e');
+    }
+  }
+
+  // Create user from basic data (for admin use)
+  static Future<void> createUserFromData(Map<String, dynamic> userData) async {
+    try {
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userData['userId'])
+          .set(userData);
+    } catch (e) {
+      throw Exception('Failed to create user: $e');
+    }
+  }
+
   // Contribution Operations
   static Future<void> createContribution(ContributionModel contribution) async {
     try {
