@@ -20,7 +20,6 @@ import 'admin_allocation_screen.dart';
 import 'admin_reports_screen.dart';
 import 'admin_add_user_screen.dart';
 import 'admin_edit_user_screen.dart';
-import 'mpesa_test_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -138,18 +137,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     switch (_currentIndex) {
       case 0: // Dashboard
         return [
-          IconButton(
-            icon: const Icon(Icons.wifi_protected_setup),
-            tooltip: 'Test M-Pesa Connection',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MpesaTestScreen(),
-                ),
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
@@ -1140,7 +1127,8 @@ class _MembersTabState extends State<_MembersTab> {
     AppHelpers.showConfirmationDialog(
       context,
       title: 'Deactivate Member',
-      message: 'Are you sure you want to deactivate ${member.name}?',
+      message:
+          'Are you sure you want to deactivate ${member.name}? They will no longer be able to access the app.',
     ).then((confirmed) async {
       if (confirmed == true) {
         try {
@@ -1151,13 +1139,44 @@ class _MembersTabState extends State<_MembersTab> {
               context,
               'Member deactivated successfully',
             );
-            setState(() {});
+            // Refresh the member list
+            _loadMembers();
           }
         } catch (e) {
           if (mounted) {
             AppHelpers.showErrorSnackBar(
               context,
               'Failed to deactivate member: $e',
+            );
+          }
+        }
+      }
+    });
+  }
+
+  void _deleteMember(BuildContext context, UserModel member) {
+    AppHelpers.showConfirmationDialog(
+      context,
+      title: 'Delete Member',
+      message:
+          'Are you sure you want to permanently delete ${member.name}? This action cannot be undone and will remove all their data.',
+    ).then((confirmed) async {
+      if (confirmed == true) {
+        try {
+          await FirestoreService.deleteUser(member.userId);
+          if (mounted) {
+            AppHelpers.showSuccessSnackBar(
+              context,
+              'Member deleted successfully',
+            );
+            // Refresh the member list
+            _loadMembers();
+          }
+        } catch (e) {
+          if (mounted) {
+            AppHelpers.showErrorSnackBar(
+              context,
+              'Failed to delete member: $e',
             );
           }
         }
@@ -1281,41 +1300,62 @@ class _MembersTabState extends State<_MembersTab> {
             const SizedBox(height: 16),
 
             // Action buttons
-            Row(
+            Column(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _viewMemberDetails(context, member),
-                    icon: const Icon(Icons.visibility, size: 18),
-                    label: const Text('View'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _viewMemberDetails(context, member),
+                        icon: const Icon(Icons.visibility, size: 18),
+                        label: const Text('View'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _editMember(context, member),
+                        icon: const Icon(Icons.edit, size: 18),
+                        label: const Text('Edit'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _editMember(context, member),
-                    icon: const Icon(Icons.edit, size: 18),
-                    label: const Text('Edit'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _deactivateMember(context, member),
+                        icon: const Icon(Icons.person_off, size: 18),
+                        label: const Text('Deactivate'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          foregroundColor: Colors.orange,
+                          side: const BorderSide(color: Colors.orange),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _deactivateMember(context, member),
-                    icon: const Icon(Icons.person_off, size: 18),
-                    label: const Text('Deactivate'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _deleteMember(context, member),
+                        icon: const Icon(Icons.delete_forever, size: 18),
+                        label: const Text('Delete'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),

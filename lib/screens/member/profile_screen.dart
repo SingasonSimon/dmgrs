@@ -653,46 +653,69 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Contact Us'),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Get in touch with our support team:',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 16),
-            Row(
+            const SizedBox(height: 16),
+            const Row(
               children: [
                 Icon(Icons.email, size: 20),
                 SizedBox(width: 8),
                 Text('support@dmgrs.com'),
               ],
             ),
-            SizedBox(height: 8),
-            Row(
+            const SizedBox(height: 8),
+            const Row(
               children: [
                 Icon(Icons.phone, size: 20),
                 SizedBox(width: 8),
                 Text('+254 700 000 000'),
               ],
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Row(
+              children: [
+                const Icon(Icons.chat, size: 20, color: Colors.green),
+                const SizedBox(width: 8),
+                const Text('+254 743 466 295'),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: () => _openWhatsApp(context),
+                  icon: const Icon(Icons.chat, size: 16),
+                  label: const Text('WhatsApp'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    minimumSize: Size.zero,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Row(
               children: [
                 Icon(Icons.location_on, size: 20),
                 SizedBox(width: 8),
                 Text('Nairobi, Kenya'),
               ],
             ),
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 16),
+            const Text(
               'Business Hours:',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            Text('Monday - Friday: 8:00 AM - 5:00 PM'),
-            Text('Saturday: 9:00 AM - 1:00 PM'),
-            Text('Sunday: Closed'),
+            const Text('Monday - Friday: 8:00 AM - 5:00 PM'),
+            const Text('Saturday: 9:00 AM - 1:00 PM'),
+            const Text('Sunday: Closed'),
           ],
         ),
         actions: [
@@ -703,6 +726,27 @@ class ProfileScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _openWhatsApp(BuildContext context) async {
+    const phoneNumber = '+254743466295';
+    const message =
+        'Hello! I need support with the Digital Merry Go Round app.';
+    final whatsappUrl =
+        'https://wa.me/${phoneNumber.replaceAll('+', '')}?text=${Uri.encodeComponent(message)}';
+
+    try {
+      // Try to open WhatsApp
+      await AppHelpers.launchUrl(whatsappUrl);
+    } catch (e) {
+      // Fallback - show error message
+      if (context.mounted) {
+        AppHelpers.showErrorSnackBar(
+          context,
+          'Could not open WhatsApp. Please contact: $phoneNumber',
+        );
+      }
+    }
   }
 
   void _showPrivacyPolicyDialog(BuildContext context) {

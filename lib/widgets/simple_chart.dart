@@ -1,5 +1,72 @@
 import 'package:flutter/material.dart';
 
+// Color palette for charts
+class ChartColors {
+  static const List<Color> primaryPalette = [
+    Color(0xFF6366F1), // Indigo
+    Color(0xFF8B5CF6), // Violet
+    Color(0xFFEC4899), // Pink
+    Color(0xFFEF4444), // Red
+    Color(0xFFF59E0B), // Amber
+    Color(0xFF10B981), // Emerald
+    Color(0xFF06B6D4), // Cyan
+    Color(0xFF3B82F6), // Blue
+    Color(0xFF84CC16), // Lime
+    Color(0xFFF97316), // Orange
+  ];
+
+  static const List<Color> secondaryPalette = [
+    Color(0xFF8B5CF6), // Violet
+    Color(0xFFEC4899), // Pink
+    Color(0xFFEF4444), // Red
+    Color(0xFFF59E0B), // Amber
+    Color(0xFF10B981), // Emerald
+    Color(0xFF06B6D4), // Cyan
+    Color(0xFF3B82F6), // Blue
+    Color(0xFF84CC16), // Lime
+    Color(0xFFF97316), // Orange
+    Color(0xFF6366F1), // Indigo
+  ];
+
+  static const List<Color> successPalette = [
+    Color(0xFF10B981), // Emerald
+    Color(0xFF059669), // Emerald 600
+    Color(0xFF047857), // Emerald 700
+    Color(0xFF065F46), // Emerald 800
+    Color(0xFF064E3B), // Emerald 900
+  ];
+
+  static const List<Color> warningPalette = [
+    Color(0xFFF59E0B), // Amber
+    Color(0xFFD97706), // Amber 600
+    Color(0xFFB45309), // Amber 700
+    Color(0xFF92400E), // Amber 800
+    Color(0xFF78350F), // Amber 900
+  ];
+
+  static const List<Color> errorPalette = [
+    Color(0xFFEF4444), // Red
+    Color(0xFFDC2626), // Red 600
+    Color(0xFFB91C1C), // Red 700
+    Color(0xFF991B1B), // Red 800
+    Color(0xFF7F1D1D), // Red 900
+  ];
+
+  static Color getColorAtIndex(int index, {List<Color>? palette}) {
+    final colors = palette ?? primaryPalette;
+    return colors[index % colors.length];
+  }
+
+  static List<Color> getGradientColors(Color baseColor) {
+    return [
+      baseColor.withOpacity(0.8),
+      baseColor.withOpacity(0.6),
+      baseColor.withOpacity(0.4),
+      baseColor.withOpacity(0.2),
+    ];
+  }
+}
+
 class SimpleBarChart extends StatelessWidget {
   final List<ChartData> data;
   final String title;

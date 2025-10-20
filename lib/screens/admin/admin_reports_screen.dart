@@ -6,6 +6,8 @@ import '../../widgets/simple_chart.dart';
 import '../../widgets/modern_card.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
+import '../../models/user_model.dart';
+import '../../services/firestore_service.dart';
 
 class AdminReportsScreen extends StatefulWidget {
   const AdminReportsScreen({super.key});
@@ -297,18 +299,25 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
     ContributionProvider contributionProvider,
     LoanProvider loanProvider,
   ) {
-    final totalContributions = contributionProvider.contributions.fold(
-      0.0,
-      (sum, contribution) => sum + contribution.amount,
-    );
+    // Calculate metrics based on actual data
+    final totalContributions = contributionProvider.contributions
+        .where((c) => c.status == AppConstants.paymentCompleted)
+        .fold(0.0, (sum, contribution) => sum + contribution.amount);
 
-    final totalLoans = loanProvider.loans.fold(
-      0.0,
-      (sum, loan) => sum + loan.finalAmount,
-    );
+    final totalLoans = loanProvider.loans
+        .where(
+          (loan) =>
+              loan.status == AppConstants.loanActive ||
+              loan.status == AppConstants.loanCompleted,
+        )
+        .fold(0.0, (sum, loan) => sum + loan.finalAmount);
 
     final completedLoans = loanProvider.loans
         .where((loan) => loan.status == AppConstants.loanCompleted)
+        .length;
+
+    final activeLoans = loanProvider.loans
+        .where((loan) => loan.status == AppConstants.loanActive)
         .length;
 
     final totalLoansCount = loanProvider.loans.length;
@@ -321,6 +330,14 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
         .map((c) => c.userId)
         .toSet()
         .length;
+
+    // Calculate average contribution per member
+    final averageContribution = memberCount > 0
+        ? totalContributions / memberCount
+        : 0.0;
+
+    // Calculate lending pool balance
+    final lendingPoolBalance = loanProvider.lendingPoolBalance;
 
     return ModernCard(
       child: Column(
@@ -348,9 +365,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
               Expanded(
                 child: _buildIndicator(
                   'Average Contribution',
-                  AppHelpers.formatCurrency(
-                    totalContributions / (memberCount > 0 ? memberCount : 1),
-                  ),
+                  AppHelpers.formatCurrency(averageContribution),
                   Icons.payments,
                   Theme.of(context).colorScheme.primary,
                 ),
@@ -371,10 +386,32 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
               const SizedBox(width: 16),
               Expanded(
                 child: _buildIndicator(
-                  'Fund Utilization',
-                  '${((totalLoans / (totalContributions > 0 ? totalContributions : 1)) * 100).toStringAsFixed(1)}%',
+                  'Active Loans',
+                  '$activeLoans',
+                  Icons.account_balance,
+                  Colors.orange,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildIndicator(
+                  'Lending Pool Balance',
+                  AppHelpers.formatCurrency(lendingPoolBalance),
                   Icons.account_balance_wallet,
                   Colors.purple,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildIndicator(
+                  'Fund Utilization',
+                  '${((totalLoans / (totalContributions > 0 ? totalContributions : 1)) * 100).toStringAsFixed(1)}%',
+                  Icons.trending_up,
+                  Colors.teal,
                 ),
               ),
             ],
@@ -560,58 +597,91 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             ),
           ),
           const SizedBox(height: 16),
-          ...topContributors.map((entry) {
-            // For now, show user ID until we implement user lookup
-            final userName = 'User ${entry.key.substring(0, 8)}...';
-            final userInitials = userName
-                .split(' ')
-                .map((n) => n[0])
-                .take(2)
-                .join('')
-                .toUpperCase();
+          FutureBuilder<List<UserModel>>(
+            future: _getUsersForContributors(
+              topContributors.map((e) => e.key).toList(),
+            ),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    child: Text(
-                      userInitials,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              final users = snapshot.data ?? [];
+              final userMap = {for (var user in users) user.userId: user};
+
+              return Column(
+                children: topContributors.map((entry) {
+                  final user = userMap[entry.key];
+                  final userName = user?.name ?? 'Unknown User';
+                  final userPhone = user?.phone ?? 'N/A';
+                  final userInitials = userName
+                      .split(' ')
+                      .map((n) => n.isNotEmpty ? n[0] : '')
+                      .take(2)
+                      .join('')
+                      .toUpperCase();
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
                       children: [
-                        Text(
-                          userName,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          child: Text(
+                            userInitials.isNotEmpty ? userInitials : 'U',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                        Text(
-                          AppHelpers.formatCurrency(entry.value),
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onSurface,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                userName,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
+                                    ),
                               ),
+                              Text(
+                                userPhone,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                              Text(
+                                AppHelpers.formatCurrency(entry.value),
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
+                  );
+                }).toList(),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -794,24 +864,30 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
     ContributionProvider contributionProvider,
     LoanProvider loanProvider,
   ) {
-    final totalContributions = contributionProvider.contributions.fold(
-      0.0,
-      (sum, contribution) => sum + contribution.amount,
-    );
+    // Only count completed contributions
+    final totalContributions = contributionProvider.contributions
+        .where((c) => c.status == AppConstants.paymentCompleted)
+        .fold(0.0, (sum, contribution) => sum + contribution.amount);
 
-    final totalLoans = loanProvider.loans.fold(
-      0.0,
-      (sum, loan) => sum + loan.finalAmount,
-    );
+    // Count only active and completed loans
+    final totalLoans = loanProvider.loans
+        .where((loan) => 
+            loan.status == AppConstants.loanActive || 
+            loan.status == AppConstants.loanCompleted)
+        .fold(0.0, (sum, loan) => sum + loan.finalAmount);
 
+    // Calculate interest from completed loans only
     final totalInterest = loanProvider.loans
         .where((loan) => loan.status == AppConstants.loanCompleted)
-        .fold(
-          0.0,
-          (sum, loan) => sum + (loan.finalAmount - loan.requestedAmount),
-        );
+        .fold(0.0, (sum, loan) => sum + (loan.finalAmount - loan.requestedAmount));
 
-    final availableFunds = totalContributions - totalLoans;
+    // Calculate outstanding loan amounts (active loans)
+    final outstandingLoans = loanProvider.loans
+        .where((loan) => loan.status == AppConstants.loanActive)
+        .fold(0.0, (sum, loan) => sum + loan.remainingBalance);
+
+    // Available funds = completed contributions - outstanding loans
+    final availableFunds = totalContributions - outstandingLoans;
 
     return ModernCard(
       child: Column(
@@ -834,16 +910,16 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             childAspectRatio: 1.5,
             children: [
               _buildFinancialItem(
-                'Total Contributions',
+                'Completed Contributions',
                 AppHelpers.formatCurrency(totalContributions),
                 Icons.payments,
                 Colors.green,
               ),
               _buildFinancialItem(
-                'Total Loans',
-                AppHelpers.formatCurrency(totalLoans),
+                'Outstanding Loans',
+                AppHelpers.formatCurrency(outstandingLoans),
                 Icons.account_balance,
-                Colors.blue,
+                Colors.red,
               ),
               _buildFinancialItem(
                 'Interest Earned',
@@ -855,7 +931,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
                 'Available Funds',
                 AppHelpers.formatCurrency(availableFunds),
                 Icons.account_balance_wallet,
-                Colors.purple,
+                availableFunds >= 0 ? Colors.purple : Colors.red,
               ),
             ],
           ),
@@ -899,20 +975,29 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
     ContributionProvider contributionProvider,
     LoanProvider loanProvider,
   ) {
-    final totalContributions = contributionProvider.contributions.fold(
-      0.0,
-      (sum, contribution) => sum + contribution.amount,
-    );
+    // Only count completed contributions for accurate analysis
+    final totalContributions = contributionProvider.contributions
+        .where((c) => c.status == AppConstants.paymentCompleted)
+        .fold(0.0, (sum, contribution) => sum + contribution.amount);
 
+    // Calculate total interest earned from completed loans
     final totalInterest = loanProvider.loans
         .where((loan) => loan.status == AppConstants.loanCompleted)
-        .fold(
-          0.0,
-          (sum, loan) => sum + (loan.finalAmount - loan.requestedAmount),
-        );
+        .fold(0.0, (sum, loan) => sum + (loan.finalAmount - loan.requestedAmount));
 
-    final profitabilityRate = totalContributions > 0
-        ? (totalInterest / totalContributions) * 100
+    // Calculate return on investment (ROI)
+    final roi = totalContributions > 0 ? (totalInterest / totalContributions) * 100 : 0.0;
+    
+    // Calculate average interest rate per loan
+    final completedLoans = loanProvider.loans
+        .where((loan) => loan.status == AppConstants.loanCompleted);
+    final averageInterestRate = completedLoans.isNotEmpty
+        ? completedLoans.fold(0.0, (sum, loan) {
+            final interestRate = loan.requestedAmount > 0 
+                ? ((loan.finalAmount - loan.requestedAmount) / loan.requestedAmount) * 100
+                : 0.0;
+            return sum + interestRate;
+          }) / completedLoans.length
         : 0.0;
 
     return ModernCard(
@@ -931,19 +1016,41 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             children: [
               Expanded(
                 child: _buildIndicator(
-                  'Interest Rate',
-                  '${profitabilityRate.toStringAsFixed(2)}%',
-                  Icons.percent,
-                  profitabilityRate > 5 ? Colors.green : Colors.orange,
+                  'ROI',
+                  '${roi.toStringAsFixed(2)}%',
+                  Icons.trending_up,
+                  roi > 5 ? Colors.green : Colors.orange,
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: _buildIndicator(
+                  'Avg Interest Rate',
+                  '${averageInterestRate.toStringAsFixed(2)}%',
+                  Icons.percent,
+                  averageInterestRate > 10 ? Colors.green : Colors.blue,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildIndicator(
                   'Total Interest',
                   AppHelpers.formatCurrency(totalInterest),
-                  Icons.trending_up,
-                  Colors.blue,
+                  Icons.account_balance_wallet,
+                  Colors.purple,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildIndicator(
+                  'Completed Loans',
+                  '${completedLoans.length}',
+                  Icons.check_circle,
+                  Colors.green,
                 ),
               ),
             ],
@@ -957,12 +1064,48 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
     ContributionProvider contributionProvider,
     LoanProvider loanProvider,
   ) {
-    // Simple cash flow projection based on current data
-    final monthlyContributions = contributionProvider.contributions
-        .where((c) => c.date.month == DateTime.now().month)
-        .fold(0.0, (sum, contribution) => sum + contribution.amount);
-
-    final projectedMonthlyIncome = monthlyContributions;
+    final now = DateTime.now();
+    
+    // Calculate average monthly contributions from last 3 months
+    final last3Months = List.generate(3, (i) => 
+        DateTime(now.year, now.month - i, 1));
+    
+    double totalContributions3Months = 0;
+    int monthsWithData = 0;
+    
+    for (final month in last3Months) {
+      final monthContributions = contributionProvider.contributions
+          .where((c) => c.status == AppConstants.paymentCompleted &&
+              c.date.year == month.year && c.date.month == month.month)
+          .fold(0.0, (sum, contribution) => sum + contribution.amount);
+      
+      if (monthContributions > 0) {
+        totalContributions3Months += monthContributions;
+        monthsWithData++;
+      }
+    }
+    
+    final averageMonthlyIncome = monthsWithData > 0 
+        ? totalContributions3Months / monthsWithData 
+        : 0.0;
+    
+    // Calculate expected monthly loan repayments
+    final activeLoans = loanProvider.loans
+        .where((loan) => loan.status == AppConstants.loanActive);
+    
+    double monthlyLoanRepayments = 0;
+    for (final loan in activeLoans) {
+      if (loan.repaymentSchedule.isNotEmpty) {
+        // Calculate average monthly payment from repayment schedule
+        final totalPayments = loan.repaymentSchedule.length;
+        final monthlyPayment = loan.finalAmount / totalPayments;
+        monthlyLoanRepayments += monthlyPayment;
+      }
+    }
+    
+    final projectedMonthlyIncome = averageMonthlyIncome;
+    final projectedMonthlyOutflow = monthlyLoanRepayments;
+    final projectedNetCashFlow = projectedMonthlyIncome - projectedMonthlyOutflow;
     final projectedYearlyIncome = projectedMonthlyIncome * 12;
 
     return ModernCard(
@@ -985,6 +1128,28 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
                   AppHelpers.formatCurrency(projectedMonthlyIncome),
                   Icons.calendar_month,
                   Colors.green,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildIndicator(
+                  'Monthly Outflow',
+                  AppHelpers.formatCurrency(projectedMonthlyOutflow),
+                  Icons.trending_down,
+                  Colors.red,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildIndicator(
+                  'Net Cash Flow',
+                  AppHelpers.formatCurrency(projectedNetCashFlow),
+                  Icons.account_balance,
+                  projectedNetCashFlow >= 0 ? Colors.green : Colors.red,
                 ),
               ),
               const SizedBox(width: 16),
@@ -1190,4 +1355,22 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
       ),
     );
   }
+
+  // Helper method to get users for contributors
+  Future<List<UserModel>> _getUsersForContributors(List<String> userIds) async {
+    try {
+      final users = <UserModel>[];
+      for (final userId in userIds) {
+        final user = await FirestoreService.getUser(userId);
+        if (user != null) {
+          users.add(user);
+        }
+      }
+      return users;
+    } catch (e) {
+      print('Error fetching users for contributors: $e');
+      return [];
+    }
+  }
 }
+

@@ -4,6 +4,7 @@ import '../models/contribution_model.dart';
 import '../models/loan_model.dart';
 import '../models/allocation_model.dart';
 import '../models/notification_model.dart';
+import '../models/group_model.dart';
 import '../utils/constants.dart';
 
 class FirestoreService {
@@ -53,6 +54,17 @@ class FirestoreService {
           .update(user.toMap());
     } catch (e) {
       throw Exception('Failed to update user: $e');
+    }
+  }
+
+  static Future<void> deleteUser(String userId) async {
+    try {
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .delete();
+    } catch (e) {
+      throw Exception('Failed to delete user: $e');
     }
   }
 
@@ -352,6 +364,25 @@ class FirestoreService {
           .toList();
     } catch (e) {
       throw Exception('Failed to get all allocations: $e');
+    }
+  }
+
+  // Get allocations filtered by cycle
+  static Future<List<AllocationModel>> getAllocationsByCycle(
+    String cycleId,
+  ) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.allocationsCollection)
+          .where('cycleId', isEqualTo: cycleId)
+          .orderBy('date', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => AllocationModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get allocations by cycle: $e');
     }
   }
 
@@ -693,7 +724,7 @@ class FirestoreService {
       // Find and update the specific payment
       bool paymentFound = false;
       bool allPaymentsCompleted = true;
-      
+
       for (int i = 0; i < repaymentSchedule.length; i++) {
         if (repaymentSchedule[i]['paymentId'] == paymentId) {
           repaymentSchedule[i]['isPaid'] = true;
@@ -705,7 +736,7 @@ class FirestoreService {
           repaymentSchedule[i]['updatedAt'] = FieldValue.serverTimestamp();
           paymentFound = true;
         }
-        
+
         // Check if all payments are completed
         if (!repaymentSchedule[i]['isPaid']) {
           allPaymentsCompleted = false;
@@ -727,10 +758,10 @@ class FirestoreService {
           .collection(AppConstants.loansCollection)
           .doc(loanId)
           .update({
-        'repaymentSchedule': repaymentSchedule,
-        'status': newLoanStatus,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+            'repaymentSchedule': repaymentSchedule,
+            'status': newLoanStatus,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
 
       return true;
     } catch (e) {
@@ -738,138 +769,38 @@ class FirestoreService {
     }
   }
 
-  // Allocation Operations
-  static Future<void> createAllocation(AllocationModel allocation) async {
-    try {
-      await _firestore
-          .collection(AppConstants.allocationsCollection)
-          .doc(allocation.allocationId)
-          .set(allocation.toMap());
-    } catch (e) {
-      throw Exception('Failed to create allocation: $e');
-    }
-  }
-
-  static Future<List<AllocationModel>> getAllocations() async {
-    try {
-      final querySnapshot = await _firestore
-          .collection(AppConstants.allocationsCollection)
-          .orderBy('date', descending: true)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => AllocationModel.fromDocument(doc))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to get allocations: $e');
-    }
-  }
-
-  static Future<List<AllocationModel>> getAllocationsByCycle(String cycleId) async {
-    try {
-      final querySnapshot = await _firestore
-          .collection(AppConstants.allocationsCollection)
-          .where('cycleId', isEqualTo: cycleId)
-          .orderBy('date', descending: true)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => AllocationModel.fromDocument(doc))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to get allocations by cycle: $e');
-    }
-  }
-
-  static Future<void> updateAllocation(AllocationModel allocation) async {
-    try {
-      await _firestore
-          .collection(AppConstants.allocationsCollection)
-          .doc(allocation.allocationId)
-          .update(allocation.toMap());
-    } catch (e) {
-      throw Exception('Failed to update allocation: $e');
-    }
-  }
-
-  // Cycle Operations
-  static Future<void> createCycle(CycleModel cycle) async {
-    try {
-      await _firestore
-          .collection(AppConstants.cyclesCollection)
-          .doc(cycle.cycleId)
-          .set(cycle.toMap());
-    } catch (e) {
-      throw Exception('Failed to create cycle: $e');
-    }
-  }
-
-  static Future<CycleModel?> getCurrentCycle() async {
-    try {
-      final querySnapshot = await _firestore
-          .collection(AppConstants.cyclesCollection)
-          .where('isActive', isEqualTo: true)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        return CycleModel.fromDocument(querySnapshot.docs.first);
-      }
-      return null;
-    } catch (e) {
-      throw Exception('Failed to get current cycle: $e');
-    }
-  }
-
-  static Future<List<CycleModel>> getAllCycles() async {
-    try {
-      final querySnapshot = await _firestore
-          .collection(AppConstants.cyclesCollection)
-          .orderBy('startDate', descending: true)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => CycleModel.fromDocument(doc))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to get all cycles: $e');
-    }
-  }
-
-  static Future<void> updateCycle(CycleModel cycle) async {
-    try {
-      await _firestore
-          .collection(AppConstants.cyclesCollection)
-          .doc(cycle.cycleId)
-          .update(cycle.toMap());
-    } catch (e) {
-      throw Exception('Failed to update cycle: $e');
-    }
-  }
+  // (duplicate allocation and cycle methods removed below; originals defined earlier in file)
 
   // Generate allocations for a cycle
   static Future<void> generateCycleAllocations(CycleModel cycle) async {
     try {
       final batch = _firestore.batch();
-      
+
       // Get total contributions for the cycle period
       final contributionsSnapshot = await _firestore
           .collection(AppConstants.contributionsCollection)
-          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(cycle.startDate))
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(cycle.startDate),
+          )
           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(cycle.endDate))
           .where('status', isEqualTo: AppConstants.paymentCompleted)
           .get();
 
-      final totalContributions = contributionsSnapshot.docs
-          .fold(0.0, (sum, doc) => sum + (doc.data()['amount'] ?? 0.0));
+      final totalContributions = contributionsSnapshot.docs.fold(
+        0.0,
+        (sum, doc) => sum + (doc.data()['amount'] ?? 0.0),
+      );
 
-      final allocationAmount = totalContributions * AppConstants.memberDistributionPercentage;
+      final allocationAmount =
+          totalContributions * AppConstants.memberDistributionPercentage;
 
       // Create allocations for each member
       for (int i = 0; i < cycle.members.length; i++) {
         final memberId = cycle.members[i];
-        final allocationId = '${cycle.cycleId}_${memberId}_${DateTime.now().millisecondsSinceEpoch}';
-        
+        final allocationId =
+            '${cycle.cycleId}_${memberId}_${DateTime.now().millisecondsSinceEpoch}';
+
         final allocation = AllocationModel(
           allocationId: allocationId,
           userId: memberId,
@@ -881,13 +812,136 @@ class FirestoreService {
         final allocationRef = _firestore
             .collection(AppConstants.allocationsCollection)
             .doc(allocationId);
-        
+
         batch.set(allocationRef, allocation.toMap());
       }
 
       await batch.commit();
     } catch (e) {
       throw Exception('Failed to generate cycle allocations: $e');
+    }
+  }
+
+  // Group Management Operations
+  static Future<void> createGroup(GroupModel group) async {
+    try {
+      await _firestore
+          .collection('groups')
+          .doc(group.groupId)
+          .set(group.toMap());
+    } catch (e) {
+      throw Exception('Failed to create group: $e');
+    }
+  }
+
+  static Future<GroupModel?> getGroup(String groupId) async {
+    try {
+      final doc = await _firestore.collection('groups').doc(groupId).get();
+
+      if (doc.exists) {
+        return GroupModel.fromDocument(doc);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get group: $e');
+    }
+  }
+
+  static Future<List<GroupModel>> getAllGroups() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('groups')
+          .where('isActive', isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => GroupModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get all groups: $e');
+    }
+  }
+
+  static Future<List<GroupModel>> getUserGroups(String userId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('groups')
+          .where('isActive', isEqualTo: true)
+          .where('memberIds', arrayContains: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => GroupModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get user groups: $e');
+    }
+  }
+
+  static Future<List<GroupModel>> getAdminGroups(String adminId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('groups')
+          .where('isActive', isEqualTo: true)
+          .where('adminId', isEqualTo: adminId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => GroupModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get admin groups: $e');
+    }
+  }
+
+  static Future<void> updateGroup(GroupModel group) async {
+    try {
+      final updatedGroup = group.copyWith(updatedAt: DateTime.now());
+      await _firestore
+          .collection('groups')
+          .doc(group.groupId)
+          .update(updatedGroup.toMap());
+    } catch (e) {
+      throw Exception('Failed to update group: $e');
+    }
+  }
+
+  static Future<void> addMemberToGroup(String groupId, String userId) async {
+    try {
+      await _firestore.collection('groups').doc(groupId).update({
+        'memberIds': FieldValue.arrayUnion([userId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to add member to group: $e');
+    }
+  }
+
+  static Future<void> removeMemberFromGroup(
+    String groupId,
+    String userId,
+  ) async {
+    try {
+      await _firestore.collection('groups').doc(groupId).update({
+        'memberIds': FieldValue.arrayRemove([userId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to remove member from group: $e');
+    }
+  }
+
+  static Future<void> deleteGroup(String groupId) async {
+    try {
+      await _firestore.collection('groups').doc(groupId).update({
+        'isActive': false,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to delete group: $e');
     }
   }
 }

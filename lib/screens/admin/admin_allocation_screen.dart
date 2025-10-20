@@ -24,6 +24,83 @@ class _AdminAllocationScreenState extends State<AdminAllocationScreen>
     _loadData();
   }
 
+  void _advanceCycle(
+    BuildContext context,
+    ContributionProvider provider,
+  ) async {
+    final ok = await provider.advanceCycle();
+    if (ok && mounted) {
+      AppHelpers.showSuccessSnackBar(context, 'Advanced to next member');
+    } else if (mounted) {
+      AppHelpers.showErrorSnackBar(
+        context,
+        provider.error ?? 'Failed to advance',
+      );
+    }
+  }
+
+  void _startCycle(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final membersController = TextEditingController();
+        DateTime start = DateTime.now();
+        DateTime end = DateTime(start.year, start.month + 1, start.day);
+        return AlertDialog(
+          title: const Text('Start New Cycle'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter comma-separated member userIds (temporary input).',
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: membersController,
+                decoration: const InputDecoration(labelText: 'Member User IDs'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final ids = membersController.text
+                    .split(',')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toList();
+                final provider = Provider.of<ContributionProvider>(
+                  context,
+                  listen: false,
+                );
+                final ok = await provider.startCycle(
+                  memberUserIds: ids,
+                  startDate: start,
+                  endDate: end,
+                );
+                if (!mounted) return;
+                Navigator.pop(ctx);
+                if (ok) {
+                  AppHelpers.showSuccessSnackBar(context, 'Cycle started');
+                } else {
+                  AppHelpers.showErrorSnackBar(
+                    context,
+                    provider.error ?? 'Failed to start cycle',
+                  );
+                }
+              },
+              child: const Text('Start'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -182,6 +259,30 @@ class _AdminAllocationScreenState extends State<AdminAllocationScreen>
                             ),
                           ),
                         ),
+                      ] else ...[
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _advanceCycle(
+                                  context,
+                                  contributionProvider,
+                                ),
+                                icon: const Icon(Icons.skip_next),
+                                label: const Text('Advance Cycle'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _startCycle(context),
+                                icon: const Icon(Icons.play_arrow),
+                                label: const Text('Start New Cycle'),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ],
                   ),
@@ -216,11 +317,17 @@ class _AdminAllocationScreenState extends State<AdminAllocationScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'A new cycle will be created when the first contribution is made.',
+                        'No active cycle. You can start a new cycle with selected members.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => _startCycle(context),
+                        icon: const Icon(Icons.play_arrow),
+                        label: const Text('Start New Cycle'),
                       ),
                     ],
                   ),

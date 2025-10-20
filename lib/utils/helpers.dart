@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart' as url_launcher;
 import 'constants.dart';
 
 class AppHelpers {
@@ -468,5 +469,15 @@ class AppHelpers {
           return word[0].toUpperCase() + word.substring(1).toLowerCase();
         })
         .join(' ');
+  }
+
+  // Launch URL
+  static Future<void> launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await url_launcher.canLaunchUrl(uri)) {
+      await url_launcher.launchUrl(uri);
+    } else {
+      throw Exception('Could not launch $url');
+    }
   }
 }

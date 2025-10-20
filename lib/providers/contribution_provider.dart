@@ -140,6 +140,110 @@ class ContributionProvider with ChangeNotifier {
     }
   }
 
+  // Start a new cycle
+  Future<bool> startCycle({
+    required List<String> memberUserIds,
+    required DateTime startDate,
+    required DateTime endDate,
+    String? notes,
+  }) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final cycle = CycleModel(
+        cycleId: AppHelpers.generateRandomId(),
+        startDate: startDate,
+        endDate: endDate,
+        members: memberUserIds,
+        currentIndex: 0,
+        isActive: true,
+        notes: notes,
+      );
+
+      await FirestoreService.createCycle(cycle);
+      _currentCycle = cycle;
+
+      // Optionally generate allocations upfront (can be per-step as well)
+      // await FirestoreService.generateCycleAllocations(cycle);
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError('Failed to start cycle: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Advance current cycle to next member
+  Future<bool> advanceCycle() async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      if (_currentCycle == null) {
+        throw Exception('No active cycle');
+      }
+
+      final cycle = _currentCycle!;
+      if (cycle.currentIndex >= cycle.members.length) {
+        // Already completed
+        return false;
+      }
+
+      final updated = cycle.copyWith(currentIndex: cycle.currentIndex + 1);
+      await FirestoreService.updateCycle(updated);
+      _currentCycle = updated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError('Failed to advance cycle: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Complete the current cycle
+  Future<bool> completeCycle() async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      if (_currentCycle == null) {
+        throw Exception('No active cycle');
+      }
+
+      final completed = _currentCycle!.copyWith(
+        isActive: false,
+        completedDate: DateTime.now(),
+      );
+      await FirestoreService.updateCycle(completed);
+      _currentCycle = completed;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError('Failed to complete cycle: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Reload allocations for current cycle
+  Future<void> reloadAllocationsForCurrentCycle() async {
+    try {
+      if (_currentCycle == null) return;
+      final list = await FirestoreService.getAllocationsByCycle(
+        _currentCycle!.cycleId,
+      );
+      _allocations = list;
+      notifyListeners();
+    } catch (_) {}
+  }
+
   // Load lending pool balance
   Future<void> loadLendingPoolBalance() async {
     try {
