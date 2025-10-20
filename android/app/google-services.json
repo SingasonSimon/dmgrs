@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "76270072251",
+    "project_id": "dmgrs-c983c",
+    "storage_bucket": "dmgrs-c983c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:76270072251:android:243ac72ff0db5600e5d49e",
+        "android_client_info": {
+          "package_name": "com.dmgrs.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_ZoK7-t_VthdL3_PQpONhdGHYlih7ENI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

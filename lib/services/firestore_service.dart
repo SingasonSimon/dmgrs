@@ -1,0 +1,586 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_model.dart';
+import '../models/contribution_model.dart';
+import '../models/loan_model.dart';
+import '../models/allocation_model.dart';
+import '../models/notification_model.dart';
+import '../utils/constants.dart';
+
+class FirestoreService {
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // User Operations
+  static Future<void> createUser(UserModel user) async {
+    try {
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(user.userId)
+          .set(user.toMap());
+    } catch (e) {
+      throw Exception('Failed to create user: $e');
+    }
+  }
+
+  static Future<UserModel?> getUser(String userId) async {
+    try {
+      final doc = await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        return UserModel.fromDocument(doc);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get user: $e');
+    }
+  }
+
+  static Future<void> updateUser(UserModel user) async {
+    try {
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(user.userId)
+          .update(user.toMap());
+    } catch (e) {
+      throw Exception('Failed to update user: $e');
+    }
+  }
+
+  static Future<List<UserModel>> getAllUsers() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.usersCollection)
+          .orderBy('joinedAt', descending: false)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => UserModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get all users: $e');
+    }
+  }
+
+  static Future<List<UserModel>> getActiveMembers() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.usersCollection)
+          .where('role', isEqualTo: AppConstants.memberRole)
+          .where('status', isEqualTo: 'active')
+          .orderBy('joinedAt', descending: false)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => UserModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get active members: $e');
+    }
+  }
+
+  // Contribution Operations
+  static Future<void> createContribution(ContributionModel contribution) async {
+    try {
+      await _firestore
+          .collection(AppConstants.contributionsCollection)
+          .doc(contribution.contributionId)
+          .set(contribution.toMap());
+    } catch (e) {
+      throw Exception('Failed to create contribution: $e');
+    }
+  }
+
+  static Future<ContributionModel?> getContribution(
+    String contributionId,
+  ) async {
+    try {
+      final doc = await _firestore
+          .collection(AppConstants.contributionsCollection)
+          .doc(contributionId)
+          .get();
+
+      if (doc.exists) {
+        return ContributionModel.fromDocument(doc);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get contribution: $e');
+    }
+  }
+
+  static Future<List<ContributionModel>> getUserContributions(
+    String userId,
+  ) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.contributionsCollection)
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      final contributions = querySnapshot.docs
+          .map((doc) => ContributionModel.fromDocument(doc))
+          .toList();
+
+      // Sort by date in memory
+      contributions.sort((a, b) => b.date.compareTo(a.date));
+
+      return contributions;
+    } catch (e) {
+      throw Exception('Failed to get user contributions: $e');
+    }
+  }
+
+  static Future<List<ContributionModel>> getAllContributions() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.contributionsCollection)
+          .orderBy('date', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => ContributionModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get all contributions: $e');
+    }
+  }
+
+  static Future<List<ContributionModel>> getPendingContributions() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.contributionsCollection)
+          .where('status', isEqualTo: AppConstants.paymentPending)
+          .orderBy('date', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => ContributionModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get pending contributions: $e');
+    }
+  }
+
+  static Future<void> updateContribution(ContributionModel contribution) async {
+    try {
+      await _firestore
+          .collection(AppConstants.contributionsCollection)
+          .doc(contribution.contributionId)
+          .update(contribution.toMap());
+    } catch (e) {
+      throw Exception('Failed to update contribution: $e');
+    }
+  }
+
+  // Loan Operations
+  static Future<void> createLoan(LoanModel loan) async {
+    try {
+      await _firestore
+          .collection(AppConstants.loansCollection)
+          .doc(loan.loanId)
+          .set(loan.toMap());
+    } catch (e) {
+      throw Exception('Failed to create loan: $e');
+    }
+  }
+
+  static Future<LoanModel?> getLoan(String loanId) async {
+    try {
+      final doc = await _firestore
+          .collection(AppConstants.loansCollection)
+          .doc(loanId)
+          .get();
+
+      if (doc.exists) {
+        return LoanModel.fromDocument(doc);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get loan: $e');
+    }
+  }
+
+  static Future<List<LoanModel>> getUserLoans(String userId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.loansCollection)
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      final loans = querySnapshot.docs
+          .map((doc) => LoanModel.fromDocument(doc))
+          .toList();
+
+      // Sort by request date in memory
+      loans.sort((a, b) => b.requestDate.compareTo(a.requestDate));
+
+      return loans;
+    } catch (e) {
+      throw Exception('Failed to get user loans: $e');
+    }
+  }
+
+  static Future<List<LoanModel>> getAllLoans() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.loansCollection)
+          .orderBy('requestDate', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => LoanModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get all loans: $e');
+    }
+  }
+
+  static Future<List<LoanModel>> getPendingLoans() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.loansCollection)
+          .where('status', isEqualTo: AppConstants.loanPending)
+          .orderBy('requestDate', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => LoanModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get pending loans: $e');
+    }
+  }
+
+  static Future<void> updateLoan(LoanModel loan) async {
+    try {
+      await _firestore
+          .collection(AppConstants.loansCollection)
+          .doc(loan.loanId)
+          .update(loan.toMap());
+    } catch (e) {
+      throw Exception('Failed to update loan: $e');
+    }
+  }
+
+  // Allocation Operations
+  static Future<void> createAllocation(AllocationModel allocation) async {
+    try {
+      await _firestore
+          .collection(AppConstants.allocationsCollection)
+          .doc(allocation.allocationId)
+          .set(allocation.toMap());
+    } catch (e) {
+      throw Exception('Failed to create allocation: $e');
+    }
+  }
+
+  static Future<AllocationModel?> getAllocation(String allocationId) async {
+    try {
+      final doc = await _firestore
+          .collection(AppConstants.allocationsCollection)
+          .doc(allocationId)
+          .get();
+
+      if (doc.exists) {
+        return AllocationModel.fromDocument(doc);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get allocation: $e');
+    }
+  }
+
+  static Future<List<AllocationModel>> getUserAllocations(String userId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.allocationsCollection)
+          .where('userId', isEqualTo: userId)
+          .orderBy('date', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => AllocationModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get user allocations: $e');
+    }
+  }
+
+  static Future<List<AllocationModel>> getAllAllocations() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.allocationsCollection)
+          .orderBy('date', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => AllocationModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get all allocations: $e');
+    }
+  }
+
+  static Future<void> updateAllocation(AllocationModel allocation) async {
+    try {
+      await _firestore
+          .collection(AppConstants.allocationsCollection)
+          .doc(allocation.allocationId)
+          .update(allocation.toMap());
+    } catch (e) {
+      throw Exception('Failed to update allocation: $e');
+    }
+  }
+
+  // Cycle Operations
+  static Future<void> createCycle(CycleModel cycle) async {
+    try {
+      await _firestore
+          .collection(AppConstants.cyclesCollection)
+          .doc(cycle.cycleId)
+          .set(cycle.toMap());
+    } catch (e) {
+      throw Exception('Failed to create cycle: $e');
+    }
+  }
+
+  static Future<CycleModel?> getCurrentCycle() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.cyclesCollection)
+          .where('isActive', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return CycleModel.fromDocument(querySnapshot.docs.first);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get current cycle: $e');
+    }
+  }
+
+  static Future<List<CycleModel>> getAllCycles() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.cyclesCollection)
+          .orderBy('startDate', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => CycleModel.fromDocument(doc))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get all cycles: $e');
+    }
+  }
+
+  static Future<void> updateCycle(CycleModel cycle) async {
+    try {
+      await _firestore
+          .collection(AppConstants.cyclesCollection)
+          .doc(cycle.cycleId)
+          .update(cycle.toMap());
+    } catch (e) {
+      throw Exception('Failed to update cycle: $e');
+    }
+  }
+
+  // Lending Pool Operations
+  static Future<Map<String, dynamic>?> getLendingPool() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.lendingPoolCollection)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return querySnapshot.docs.first.data();
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to get lending pool: $e');
+    }
+  }
+
+  static Future<void> updateLendingPool(Map<String, dynamic> poolData) async {
+    try {
+      final docRef = _firestore
+          .collection(AppConstants.lendingPoolCollection)
+          .doc('current');
+
+      await docRef.set(poolData, SetOptions(merge: true));
+    } catch (e) {
+      throw Exception('Failed to update lending pool: $e');
+    }
+  }
+
+  // Transaction Operations
+  static Future<void> createTransaction(
+    Map<String, dynamic> transaction,
+  ) async {
+    try {
+      await _firestore
+          .collection(AppConstants.transactionsCollection)
+          .add(transaction);
+    } catch (e) {
+      throw Exception('Failed to create transaction: $e');
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getUserTransactions(
+    String userId,
+  ) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.transactionsCollection)
+          .where('userId', isEqualTo: userId)
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => {...doc.data(), 'id': doc.id})
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get user transactions: $e');
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getAllTransactions() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(AppConstants.transactionsCollection)
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => {...doc.data(), 'id': doc.id})
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get all transactions: $e');
+    }
+  }
+
+  // Real-time listeners
+  static Stream<List<UserModel>> getUsersStream() {
+    return _firestore
+        .collection(AppConstants.usersCollection)
+        .orderBy('joinedAt', descending: false)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => UserModel.fromDocument(doc)).toList(),
+        );
+  }
+
+  static Stream<List<ContributionModel>> getUserContributionsStream(
+    String userId,
+  ) {
+    return _firestore
+        .collection(AppConstants.contributionsCollection)
+        .where('userId', isEqualTo: userId)
+        .orderBy('date', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => ContributionModel.fromDocument(doc))
+              .toList(),
+        );
+  }
+
+  static Stream<List<LoanModel>> getUserLoansStream(String userId) {
+    return _firestore
+        .collection(AppConstants.loansCollection)
+        .where('userId', isEqualTo: userId)
+        .orderBy('requestDate', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => LoanModel.fromDocument(doc)).toList(),
+        );
+  }
+
+  static Stream<CycleModel?> getCurrentCycleStream() {
+    return _firestore
+        .collection(AppConstants.cyclesCollection)
+        .where('isActive', isEqualTo: true)
+        .limit(1)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs.isNotEmpty
+              ? CycleModel.fromDocument(snapshot.docs.first)
+              : null,
+        );
+  }
+
+  // Notification Operations
+  static Future<void> createNotification(NotificationModel notification) async {
+    try {
+      await _firestore
+          .collection('notifications')
+          .doc(notification.notificationId)
+          .set(notification.toMap());
+    } catch (e) {
+      throw Exception('Failed to create notification: $e');
+    }
+  }
+
+  static Future<List<NotificationModel>> getUserNotifications(
+    String userId,
+  ) async {
+    try {
+      final snapshot = await _firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: userId)
+          .limit(50)
+          .get();
+
+      final notifications = snapshot.docs
+          .map((doc) => NotificationModel.fromMap(doc.data()))
+          .toList();
+
+      // Sort by creation date in memory
+      notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      return notifications;
+    } catch (e) {
+      throw Exception('Failed to get user notifications: $e');
+    }
+  }
+
+  static Future<void> updateNotification(
+    String notificationId,
+    Map<String, dynamic> updates,
+  ) async {
+    try {
+      await _firestore
+          .collection('notifications')
+          .doc(notificationId)
+          .update(updates);
+    } catch (e) {
+      throw Exception('Failed to update notification: $e');
+    }
+  }
+
+  static Future<void> markAllNotificationsAsRead(String userId) async {
+    try {
+      final batch = _firestore.batch();
+      final snapshot = await _firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: userId)
+          .where('isRead', isEqualTo: false)
+          .get();
+
+      for (final doc in snapshot.docs) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to mark all notifications as read: $e');
+    }
+  }
+}
