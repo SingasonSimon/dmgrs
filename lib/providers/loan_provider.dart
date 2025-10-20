@@ -523,7 +523,7 @@ class LoanProvider with ChangeNotifier {
           if (loan.repaymentSchedule.length != newRepaymentPeriod ||
               loan.interestRate != newInterestRate) {
             print(
-              'Migrating loan ${loan.loanId}: ${loan.repaymentSchedule.length} months -> $newRepaymentPeriod months, ${loan.interestRate}% -> ${newInterestRate}%',
+              'Migrating loan ${loan.loanId}: ${loan.repaymentSchedule.length} months -> $newRepaymentPeriod months, ${loan.interestRate}% -> $newInterestRate%',
             );
 
             // Create new repayment schedule

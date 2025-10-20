@@ -18,6 +18,7 @@ import '../shared/welcome_screen.dart';
 import 'admin_loan_screen.dart';
 import 'admin_allocation_screen.dart';
 import 'admin_reports_screen.dart';
+import 'admin_groups_screen.dart';
 import 'admin_add_user_screen.dart';
 import 'admin_edit_user_screen.dart';
 
@@ -144,6 +145,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const NotificationsScreen(),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.groups),
+            tooltip: 'Manage Groups',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminGroupsScreen(),
                 ),
               );
             },
@@ -992,8 +1005,9 @@ class _MembersTabState extends State<_MembersTab> {
                         ? index
                         : _currentPage - 2 + index;
 
-                    if (pageNumber >= _totalPages)
+                    if (pageNumber >= _totalPages) {
                       return const SizedBox.shrink();
+                    }
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -1263,7 +1277,7 @@ class _MembersTabState extends State<_MembersTab> {
               decoration: BoxDecoration(
                 color: Theme.of(
                   context,
-                ).colorScheme.surfaceVariant.withOpacity(0.3),
+                ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(

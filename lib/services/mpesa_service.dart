@@ -309,7 +309,7 @@ class MpesaService {
         'message': 'Connection successful',
         'environment': AppConstants.isMpesaSandbox ? 'Sandbox' : 'Production',
         'accessToken':
-            accessToken.substring(0, 20) + '...', // Show partial token
+            '${accessToken.substring(0, 20)}...', // Show partial token
         'serviceAvailable': serviceAvailable,
       };
     } catch (e) {

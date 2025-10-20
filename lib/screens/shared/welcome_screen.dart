@@ -151,7 +151,7 @@ class WelcomeScreen extends StatelessWidget {
 
         ...features
             .map((feature) => _buildFeatureCard(context, feature))
-            .toList(),
+            ,
       ],
     );
   }

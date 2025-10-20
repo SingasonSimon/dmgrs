@@ -904,7 +904,7 @@ class _DisburseLoanDialogState extends State<_DisburseLoanDialog> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _disbursementMethod,
+              initialValue: _disbursementMethod,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(

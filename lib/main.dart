@@ -8,6 +8,7 @@ import 'providers/contribution_provider.dart';
 import 'providers/loan_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
+import 'providers/group_provider.dart';
 import 'services/notification_service.dart';
 import 'screens/auth/auth_wrapper.dart';
 import 'utils/constants.dart';
@@ -45,6 +46,7 @@ class DigitalMerryGoRoundApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ContributionProvider()),
         ChangeNotifierProvider(create: (_) => LoanProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => GroupProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

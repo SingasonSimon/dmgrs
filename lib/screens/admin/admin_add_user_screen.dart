@@ -218,7 +218,7 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
 
             // Role Selection
             DropdownButtonFormField<String>(
-              value: _selectedRole,
+              initialValue: _selectedRole,
               decoration: InputDecoration(
                 labelText: 'User Role',
                 prefixIcon: const Icon(Icons.admin_panel_settings),

@@ -222,7 +222,7 @@ class _AdminEditUserScreenState extends State<AdminEditUserScreen> {
 
                       // Role Selection
                       DropdownButtonFormField<String>(
-                        value: _selectedRole,
+                        initialValue: _selectedRole,
                         decoration: InputDecoration(
                           labelText: 'Role',
                           prefixIcon: const Icon(Icons.badge),
@@ -265,7 +265,7 @@ class _AdminEditUserScreenState extends State<AdminEditUserScreen> {
 
                       // Status Selection
                       DropdownButtonFormField<String>(
-                        value: _selectedStatus,
+                        initialValue: _selectedStatus,
                         decoration: InputDecoration(
                           labelText: 'Status',
                           prefixIcon: const Icon(Icons.circle),

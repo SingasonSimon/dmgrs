@@ -433,7 +433,7 @@ class _AdminAllocationScreenState extends State<AdminAllocationScreen>
                     ),
                   ),
                 );
-              }).toList(),
+              }),
           ],
         ),
       ),

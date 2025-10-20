@@ -854,7 +854,7 @@ class _FilterDialogState extends State<_FilterDialog> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _tempStatus,
+              initialValue: _tempStatus,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(
@@ -882,7 +882,7 @@ class _FilterDialogState extends State<_FilterDialog> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _tempMonth,
+              initialValue: _tempMonth,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(
@@ -910,7 +910,7 @@ class _FilterDialogState extends State<_FilterDialog> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _tempYear,
+              initialValue: _tempYear,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(

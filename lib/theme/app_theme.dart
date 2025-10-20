@@ -82,7 +82,6 @@ class AppTheme {
             // High contrast text colors - all white for maximum visibility
             onSurface: const Color(0xFFFFFFFF), // Pure white
             onSurfaceVariant: const Color(0xFFFFFFFF), // Pure white
-            onBackground: const Color(0xFFFFFFFF), // Pure white
             // Accent colors
             primary: const Color(0xFF3B82F6), // Blue 500
             onPrimary: const Color(0xFFFFFFFF),
@@ -100,9 +99,7 @@ class AppTheme {
             onErrorContainer: const Color(0xFFFEE2E2), // Red 100
             // Outline and borders
             outline: const Color(0xFF475569), // Slate 600
-            outlineVariant: const Color(0xFF334155), // Slate 700
-            // Background
-            background: const Color(0xFF0F172A), // Slate 900
+            outlineVariant: const Color(0xFF334155), // Slate 900
           ),
       textTheme: GoogleFonts.interTextTheme(),
       appBarTheme: const AppBarTheme(
