@@ -100,11 +100,6 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
         }
       },
       child: Scaffold(
-        drawer: ModernNavigationDrawer(
-          onLogoutTap: _showLogoutDialog,
-          onNavigationTap: _onTabTapped,
-          isAdmin: false,
-        ),
         body: Column(
           children: [
             // Custom header with menu and notifications
@@ -127,12 +122,6 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
               ),
               child: Row(
                 children: [
-                  Builder(
-                    builder: (context) => IconButton(
-                      icon: const Icon(Icons.menu),
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                    ),
-                  ),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.notifications_outlined),

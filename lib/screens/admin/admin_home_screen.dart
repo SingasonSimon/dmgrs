@@ -199,18 +199,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_getAppBarTitle()),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
         actions: _getAppBarActions(),
-      ),
-      drawer: ModernNavigationDrawer(
-        onLogoutTap: _showLogoutDialog,
-        onNavigationTap: _onTabTapped,
-        isAdmin: true,
       ),
       body: PageView(
         controller: _pageController,
@@ -1267,15 +1256,15 @@ class _MembersTabState extends State<_MembersTab> {
                                   color: member.status == 'active'
                                       ? Colors.green.withOpacity(0.1)
                                       : member.status == 'inactive'
-                                          ? Colors.orange.withOpacity(0.1)
-                                          : Colors.red.withOpacity(0.1),
+                                      ? Colors.orange.withOpacity(0.1)
+                                      : Colors.red.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: member.status == 'active'
                                         ? Colors.green.withOpacity(0.3)
                                         : member.status == 'inactive'
-                                            ? Colors.orange.withOpacity(0.3)
-                                            : Colors.red.withOpacity(0.3),
+                                        ? Colors.orange.withOpacity(0.3)
+                                        : Colors.red.withOpacity(0.3),
                                     width: 1,
                                   ),
                                 ),
@@ -1285,8 +1274,8 @@ class _MembersTabState extends State<_MembersTab> {
                                     color: member.status == 'active'
                                         ? Colors.green
                                         : member.status == 'inactive'
-                                            ? Colors.orange
-                                            : Colors.red,
+                                        ? Colors.orange
+                                        : Colors.red,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -1346,8 +1335,8 @@ class _MembersTabState extends State<_MembersTab> {
                     valueColor: member.status == 'active'
                         ? Colors.green
                         : member.status == 'inactive'
-                            ? Colors.orange
-                            : Colors.red,
+                        ? Colors.orange
+                        : Colors.red,
                   ),
                 ],
               ),
@@ -1404,44 +1393,44 @@ class _MembersTabState extends State<_MembersTab> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                        onPressed: () => _deactivateMember(context, member),
-                        icon: const Icon(Icons.person_off, size: 18),
-                        label: const Text('Deactivate'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          foregroundColor: Colors.orange,
-                          side: const BorderSide(color: Colors.orange),
+                          onPressed: () => _deactivateMember(context, member),
+                          icon: const Icon(Icons.person_off, size: 18),
+                          label: const Text('Deactivate'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            foregroundColor: Colors.orange,
+                            side: const BorderSide(color: Colors.orange),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _deleteMember(context, member),
-                        icon: const Icon(Icons.delete_forever, size: 18),
-                        label: const Text('Delete'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _deleteMember(context, member),
+                          icon: const Icon(Icons.delete_forever, size: 18),
+                          label: const Text('Delete'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _deleteMember(context, member),
-                        icon: const Icon(Icons.delete_forever, size: 18),
-                        label: const Text('Delete'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _deleteMember(context, member),
+                          icon: const Icon(Icons.delete_forever, size: 18),
+                          label: const Text('Delete'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
               ],
             ),
           ],
@@ -1472,35 +1461,6 @@ class _MembersTabState extends State<_MembersTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to reactivate member: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _deactivateMember(BuildContext context, UserModel member) async {
-    try {
-      // Update user status to inactive
-      final updatedUser = member.copyWith(status: 'inactive');
-      await FirestoreService.updateUser(updatedUser);
-
-      // Reload members to reflect the change
-      _loadMembers();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${member.name} has been deactivated'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to deactivate member: $e'),
             backgroundColor: Colors.red,
           ),
         );

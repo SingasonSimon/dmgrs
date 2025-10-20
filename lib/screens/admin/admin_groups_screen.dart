@@ -1032,6 +1032,13 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
 
       await FirestoreService.createUserFromData(newUser);
 
+      // Also add user to group in their document
+      try {
+        await FirestoreService.addUserToGroup(userId, group.groupId);
+      } catch (e) {
+        print('Warning: Could not add user to group in user document: $e');
+      }
+
       // Add to group
       final success = await groupProvider.addMemberToGroup(
         group.groupId,
@@ -1043,6 +1050,8 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
         Navigator.pop(context); // Close manage members dialog
 
         if (success) {
+          // Refresh the group data to show the new member
+          await groupProvider.loadGroups();
           AppHelpers.showSuccessSnackBar(
             context,
             'New member created and added successfully',
@@ -1102,7 +1111,7 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
     // Close the search dialog first
-    Navigator.pop(context);
+    Navigator.of(context, rootNavigator: true).pop();
 
     final success = await groupProvider.addMemberToGroup(
       group.groupId,
@@ -1111,6 +1120,8 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
 
     if (mounted) {
       if (success) {
+        // Refresh the group data to show the new member
+        await groupProvider.loadGroups();
         AppHelpers.showSuccessSnackBar(context, 'Member added successfully');
       } else {
         AppHelpers.showErrorSnackBar(
