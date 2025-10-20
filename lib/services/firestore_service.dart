@@ -1044,11 +1044,14 @@ class FirestoreService {
   // Group Management Operations
   static Future<void> createGroup(GroupModel group) async {
     try {
+      print('FirestoreService: Creating group ${group.groupId}');
       await _firestore
           .collection('groups')
           .doc(group.groupId)
-          .set(group.toMap());
+          .set(group.toCreateMap());
+      print('FirestoreService: Group ${group.groupId} created successfully');
     } catch (e) {
+      print('FirestoreService: Failed to create group ${group.groupId}: $e');
       throw Exception('Failed to create group: $e');
     }
   }

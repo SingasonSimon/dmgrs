@@ -38,6 +38,20 @@ class GroupModel {
     };
   }
 
+  // Convert to Map for creation (without updatedAt initially)
+  Map<String, dynamic> toCreateMap() {
+    return {
+      'groupId': groupId,
+      'groupName': groupName,
+      'description': description,
+      'adminId': adminId,
+      'memberIds': memberIds,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'isActive': isActive,
+      'settings': settings,
+    };
+  }
+
   // Create from Firestore document
   factory GroupModel.fromDocument(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;

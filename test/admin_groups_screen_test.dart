@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:digital_merry_go_round/models/group_model.dart';
 import 'package:digital_merry_go_round/providers/group_provider.dart';
+import 'package:digital_merry_go_round/providers/auth_provider.dart';
 import 'package:digital_merry_go_round/screens/admin/admin_groups_screen.dart';
 
 class FakeGroupProvider extends GroupProvider {
@@ -23,6 +24,19 @@ class FakeGroupProvider extends GroupProvider {
   Future<void> loadGroups() async {
     // no-op
   }
+}
+
+class FakeAuthProvider extends AuthProvider {
+  FakeAuthProvider() : super();
+
+  @override
+  String get userId => 'test_admin_user';
+
+  @override
+  bool get isAuthenticated => true;
+
+  @override
+  String get userRole => 'admin';
 }
 
 GroupModel makeGroup(String id, String name, {int members = 3}) {
@@ -59,5 +73,9 @@ void main() {
     expect(find.text('Alpha Group'), findsOneWidget);
     expect(find.text('Beta Group'), findsOneWidget);
     expect(find.byIcon(Icons.groups), findsWidgets);
+
+    // Check that group IDs are displayed
+    expect(find.text('ID: g1'), findsOneWidget);
+    expect(find.text('ID: g2'), findsOneWidget);
   });
 }

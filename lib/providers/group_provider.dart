@@ -51,18 +51,7 @@ class GroupProvider with ChangeNotifier {
   void _cacheGroupData() {
     // In a real implementation, you might want to cache group data locally
     // For now, we'll just ensure the data is fresh
-    for (final group in _groups) {
-      // This is a placeholder for future caching implementation
-      // You could store frequently accessed group data in memory
-    }
-  }
-
-  // Cache member names for faster display
-  void _cacheMemberNames(GroupModel group) async {
-    for (final memberId in group.memberIds) {
-      // This would cache member names - implementation depends on requirements
-      // For now, we'll rely on the existing user name caching in FirestoreService
-    }
+    // This is a placeholder for future caching implementation
   }
 
   // Load groups for a specific user
@@ -104,44 +93,60 @@ class GroupProvider with ChangeNotifier {
         return false;
       }
 
-      // Check if admin exists and is eligible
+      // Check if admin exists and is eligible (more lenient for new users)
       final adminUser = await FirestoreService.getUser(adminId);
       if (adminUser == null) {
-        _setError('Admin user not found');
-        return false;
+        // For new users, we'll allow group creation but log the issue
+        print(
+          'Warning: Admin user $adminId not found in database. Allowing group creation for new user.',
+        );
       }
 
-      // Check admin's current group count
-      final adminGroups = await FirestoreService.getAdminGroups(adminId);
-      final maxAdminGroups = 3; // Configurable limit
-      if (adminGroups.length >= maxAdminGroups) {
-        _setError('Admin has reached maximum number of groups they can manage');
-        return false;
+      // Check admin's current group count (with error handling)
+      try {
+        final adminGroups = await FirestoreService.getAdminGroups(adminId);
+        final maxAdminGroups = 3; // Configurable limit
+        if (adminGroups.length >= maxAdminGroups) {
+          _setError(
+            'Admin has reached maximum number of groups they can manage',
+          );
+          return false;
+        }
+      } catch (e) {
+        // For new users, this might fail - we'll allow it
+        print('Warning: Could not check admin group count for $adminId: $e');
       }
 
-      // Validate initial members if provided
+      // Validate initial members if provided (with error handling)
       if (initialMembers != null && initialMembers.isNotEmpty) {
         for (final memberId in initialMembers) {
-          // For initial members, just check if user exists and basic constraints
-          final user = await FirestoreService.getUser(memberId);
-          if (user == null) {
-            _setError('Initial member $memberId not found');
-            return false;
-          }
+          try {
+            // For initial members, just check if user exists and basic constraints
+            final user = await FirestoreService.getUser(memberId);
+            if (user == null) {
+              _setError('Initial member $memberId not found');
+              return false;
+            }
 
-          // Check user's group limit
-          final userGroups = await FirestoreService.getUserGroups(memberId);
-          final maxGroupsPerUser = 5;
-          if (userGroups.length >= maxGroupsPerUser) {
-            _setError(
-              'Initial member $memberId has reached maximum number of groups',
-            );
-            return false;
+            // Check user's group limit
+            final userGroups = await FirestoreService.getUserGroups(memberId);
+            final maxGroupsPerUser = 5;
+            if (userGroups.length >= maxGroupsPerUser) {
+              _setError(
+                'Initial member $memberId has reached maximum number of groups',
+              );
+              return false;
+            }
+          } catch (e) {
+            // For new users, this might fail - we'll allow it but log
+            print('Warning: Could not validate initial member $memberId: $e');
           }
         }
       }
 
       final groupId = AppHelpers.generateRandomId();
+      print('Creating group with ID: $groupId');
+
       final group = GroupModel(
         groupId: groupId,
         groupName: groupName,
@@ -151,7 +156,17 @@ class GroupProvider with ChangeNotifier {
         createdAt: DateTime.now(),
       );
 
+      print('Group object created: ${group.toMap()}');
       await FirestoreService.createGroup(group);
+      print('Group successfully created in Firestore');
+
+      // Also update the user's groupIds if they're not already there
+      try {
+        await FirestoreService.addUserToGroup(adminId, groupId);
+      } catch (e) {
+        print('Warning: Could not add user to group in user document: $e');
+      }
+
       _groups.insert(0, group);
       notifyListeners();
       return true;

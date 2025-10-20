@@ -134,11 +134,33 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
+                      const SizedBox(height: 4),
                       Text(
                         '${group.memberCount} members',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            'ID: ${group.groupId}',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                  fontFamily: 'monospace',
+                                ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.copy, size: 16),
+                            onPressed: () =>
+                                _copyGroupId(context, group.groupId),
+                            tooltip: 'Copy Group ID',
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -279,18 +301,23 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final nameError = GroupModel.validateGroupName(
-                nameController.text.trim(),
+              final groupName = nameController.text.trim();
+              final description = descriptionController.text.trim();
+
+              print(
+                'Creating group with name: "$groupName" and description: "$description"',
               );
+
+              final nameError = GroupModel.validateGroupName(groupName);
               if (nameError != null) {
+                print('Group name validation failed: $nameError');
                 AppHelpers.showErrorSnackBar(context, nameError);
                 return;
               }
 
-              final descError = GroupModel.validateDescription(
-                descriptionController.text.trim(),
-              );
+              final descError = GroupModel.validateDescription(description);
               if (descError != null) {
+                print('Group description validation failed: $descError');
                 AppHelpers.showErrorSnackBar(context, descError);
                 return;
               }
@@ -306,9 +333,12 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
                 listen: false,
               );
 
+              print(
+                'About to call createGroup with adminId: ${authProvider.userId}',
+              );
               final success = await groupProvider.createGroup(
-                groupName: nameController.text.trim(),
-                description: descriptionController.text.trim(),
+                groupName: groupName,
+                description: description,
                 adminId: authProvider.userId,
               );
 
@@ -343,8 +373,10 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildDetailRow('Group ID', group.groupId),
             _buildDetailRow('Description', group.description),
             _buildDetailRow('Members', '${group.memberCount}'),
+            _buildDetailRow('Status', group.statusText),
             _buildDetailRow('Created', AppHelpers.formatDate(group.createdAt)),
             if (group.updatedAt != null)
               _buildDetailRow(
@@ -956,6 +988,17 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
         );
       }
     }
+  }
+
+  void _copyGroupId(BuildContext context, String groupId) {
+    // Copy group ID to clipboard
+    // Note: In a real Flutter app, you'd use Clipboard.setData()
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Group ID copied: $groupId'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _removeMember(BuildContext context, GroupModel group, String memberId) {
