@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/loan_model.dart';
 import '../services/firestore_service.dart';
 import '../services/notification_service.dart';
+import '../services/mpesa_service.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
 
@@ -687,5 +688,52 @@ class LoanProvider with ChangeNotifier {
       rejectedBy: 'admin', // TODO: Get actual admin user ID
       rejectionReason: rejectionReason,
     );
+  }
+
+  // Process loan payment with M-Pesa
+  Future<bool> processLoanPayment({
+    required String loanId,
+    required String paymentId,
+    required double amount,
+    required String phoneNumber,
+  }) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      // Initiate M-Pesa STK Push
+      final mpesaResponse = await MpesaService.initiateSTKPush(
+        phoneNumber: phoneNumber,
+        amount: amount,
+        accountReference: 'LOAN_PAYMENT_$paymentId',
+        transactionDesc: 'Loan repayment payment',
+      );
+
+      if (mpesaResponse != null && mpesaResponse['ResponseCode'] == '0') {
+        // Update loan payment with M-Pesa reference
+        final success = await FirestoreService.updateLoanPayment(
+          loanId: loanId,
+          paymentId: paymentId,
+          mpesaRef: mpesaResponse['CheckoutRequestID'],
+          status: AppConstants.paymentPending,
+        );
+
+        if (success) {
+          // Reload loans to reflect changes
+          await loadLoans();
+          notifyListeners();
+          return true;
+        } else {
+          throw Exception('Failed to update loan payment');
+        }
+      } else {
+        throw Exception('M-Pesa STK Push failed');
+      }
+    } catch (e) {
+      _setError('Failed to process loan payment: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 }

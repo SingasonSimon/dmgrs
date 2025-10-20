@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/loan_model.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
 import '../../widgets/modern_card.dart';
+import '../../providers/loan_provider.dart';
+import '../../services/mpesa_service.dart';
 
 class LoanRepaymentScreen extends StatefulWidget {
   final LoanModel loan;
@@ -522,7 +525,180 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
   }
 
   void _processPayment(RepaymentSchedule payment) {
-    // TODO: Implement actual payment processing with M-Pesa
-    AppHelpers.showSnackBar(context, 'Payment processing feature coming soon!');
+    showDialog(
+      context: context,
+      builder: (context) => _PaymentDialog(
+        payment: payment,
+        loan: widget.loan,
+        onPaymentSuccess: () {
+          // Refresh the loan data
+          setState(() {});
+        },
+      ),
+    );
+  }
+}
+
+class _PaymentDialog extends StatefulWidget {
+  final RepaymentSchedule payment;
+  final loan;
+  final VoidCallback onPaymentSuccess;
+
+  const _PaymentDialog({
+    required this.payment,
+    required this.loan,
+    required this.onPaymentSuccess,
+  });
+
+  @override
+  State<_PaymentDialog> createState() => _PaymentDialogState();
+}
+
+class _PaymentDialogState extends State<_PaymentDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _phoneController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Make Payment'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Amount: ${AppHelpers.formatCurrency(widget.payment.amount)}',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Due Date: ${AppHelpers.formatDate(widget.payment.dueDate)}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                labelText: 'M-Pesa Phone Number',
+                prefixIcon: const Icon(Icons.phone),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                hintText: '07XX XXX XXX',
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your phone number';
+                }
+                if (!MpesaService.isValidPhoneNumber(value)) {
+                  return 'Please enter a valid phone number';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'You will receive an M-Pesa prompt on your phone to complete the payment.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _processPayment,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Pay Now'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _processPayment() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final loanProvider = Provider.of<LoanProvider>(context, listen: false);
+
+      // Process loan payment
+      final success = await loanProvider.processLoanPayment(
+        loanId: widget.loan.loanId,
+        paymentId: widget.payment.paymentId,
+        amount: widget.payment.amount,
+        phoneNumber: _phoneController.text.trim(),
+      );
+
+      if (success && mounted) {
+        Navigator.pop(context);
+        AppHelpers.showSnackBar(
+          context,
+          'Payment initiated! Check your phone for M-Pesa prompt.',
+        );
+        widget.onPaymentSuccess();
+      } else if (mounted) {
+        AppHelpers.showSnackBar(
+          context,
+          loanProvider.error ?? 'Failed to initiate payment',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppHelpers.showSnackBar(context, 'Error processing payment: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }

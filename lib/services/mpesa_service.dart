@@ -7,9 +7,8 @@ class MpesaService {
   // Generate access token for M-Pesa API
   static Future<String?> getAccessToken() async {
     try {
-      final String consumerKey = 'your_consumer_key'; // Replace with actual key
-      final String consumerSecret =
-          'your_consumer_secret'; // Replace with actual secret
+      final String consumerKey = AppConstants.mpesaConsumerKey;
+      final String consumerSecret = AppConstants.mpesaConsumerSecret;
 
       final String credentials = base64Encode(
         utf8.encode('$consumerKey:$consumerSecret'),
@@ -93,8 +92,7 @@ class MpesaService {
         'PartyA': cleanPhone,
         'PartyB': AppConstants.mpesaBusinessShortCode,
         'PhoneNumber': cleanPhone,
-        'CallBackURL':
-            'https://your-callback-url.com/callback', // Replace with actual callback URL
+        'CallBackURL': AppConstants.mpesaCallbackUrl,
         'AccountReference': accountReference,
         'TransactionDesc': transactionDesc,
       };

@@ -54,6 +54,12 @@ class AppConstants {
   static const String mpesaPasskey =
       'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'; // Sandbox
 
+  // TODO: Replace with your actual credentials
+  static const String mpesaConsumerKey = 'your_consumer_key_here';
+  static const String mpesaConsumerSecret = 'your_consumer_secret_here';
+  static const String mpesaCallbackUrl =
+      'https://your-domain.com/mpesa/callback';
+
   // AWS S3
   static const String s3BucketName = 'digital-merry-go-round-documents';
   static const String s3Region = 'us-east-1';

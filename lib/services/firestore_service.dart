@@ -583,4 +583,57 @@ class FirestoreService {
       throw Exception('Failed to mark all notifications as read: $e');
     }
   }
+
+  // Update loan payment with M-Pesa reference
+  static Future<bool> updateLoanPayment({
+    required String loanId,
+    required String paymentId,
+    required String mpesaRef,
+    required String status,
+  }) async {
+    try {
+      final loanDoc = await _firestore
+          .collection(AppConstants.loansCollection)
+          .doc(loanId)
+          .get();
+
+      if (!loanDoc.exists) {
+        throw Exception('Loan not found');
+      }
+
+      final loanData = loanDoc.data()!;
+      final repaymentSchedule = List<Map<String, dynamic>>.from(
+        loanData['repaymentSchedule'] ?? [],
+      );
+
+      // Find and update the specific payment
+      bool paymentFound = false;
+      for (int i = 0; i < repaymentSchedule.length; i++) {
+        if (repaymentSchedule[i]['paymentId'] == paymentId) {
+          repaymentSchedule[i]['mpesaRef'] = mpesaRef;
+          repaymentSchedule[i]['status'] = status;
+          repaymentSchedule[i]['updatedAt'] = FieldValue.serverTimestamp();
+          paymentFound = true;
+          break;
+        }
+      }
+
+      if (!paymentFound) {
+        throw Exception('Payment not found in loan');
+      }
+
+      // Update the loan document
+      await _firestore
+          .collection(AppConstants.loansCollection)
+          .doc(loanId)
+          .update({
+            'repaymentSchedule': repaymentSchedule,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+      return true;
+    } catch (e) {
+      throw Exception('Failed to update loan payment: $e');
+    }
+  }
 }
