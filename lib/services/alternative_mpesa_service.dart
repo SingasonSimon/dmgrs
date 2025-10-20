@@ -1,8 +1,4 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:crypto/crypto.dart';
-import 'package:http/http.dart' as http;
-import '../utils/constants.dart';
+// Alternative M-Pesa service - currently not implemented
 
 class AlternativeMpesaService {
   // Alternative M-Pesa STK Push implementation

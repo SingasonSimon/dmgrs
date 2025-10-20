@@ -18,6 +18,9 @@ class AppConstants {
   static const String paymentPending = 'pending';
   static const String paymentCompleted = 'completed';
   static const String paymentFailed = 'failed';
+
+  // Contribution Status (alias for payment status)
+  static const String contributionPending = paymentPending;
   static const String paymentOverdue = 'overdue';
 
   // Loan Status

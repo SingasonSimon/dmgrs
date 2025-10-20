@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import '../utils/constants.dart';
 
@@ -8,10 +6,7 @@ class S3Service {
   // AWS S3 configuration
   static const String _bucketName = AppConstants.s3BucketName;
   static const String _region = AppConstants.s3Region;
-  static const String _accessKeyId =
-      'YOUR_AWS_ACCESS_KEY_ID'; // Replace with actual key
-  static const String _secretAccessKey =
-      'YOUR_AWS_SECRET_ACCESS_KEY'; // Replace with actual key
+  // AWS credentials would be configured here
 
   // Upload profile image to S3
   static Future<String> uploadProfileImage({
@@ -169,26 +164,4 @@ class S3Service {
   }
 
   // Generate AWS signature (for actual S3 integration)
-  static String _generateSignature({
-    required String method,
-    required String uri,
-    required Map<String, String> headers,
-    required String payload,
-  }) {
-    // This would implement AWS signature version 4
-    // For now, return a placeholder
-    return 'AWS4-HMAC-SHA256 Credential=placeholder/20231020/us-east-1/s3/aws4_request, SignedHeaders=placeholder, Signature=placeholder';
-  }
-
-  // Create AWS canonical request
-  static String _createCanonicalRequest({
-    required String method,
-    required String uri,
-    required Map<String, String> headers,
-    required String payload,
-  }) {
-    // This would create the canonical request for AWS signature
-    // For now, return a placeholder
-    return 'placeholder';
-  }
 }

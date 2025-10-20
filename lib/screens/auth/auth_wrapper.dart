@@ -5,8 +5,24 @@ import '../member/member_home_screen.dart';
 import '../admin/admin_home_screen.dart';
 import '../shared/welcome_screen.dart';
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    // Add a small delay to ensure authentication state is properly initialized
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +32,9 @@ class AuthWrapper extends StatelessWidget {
           'AuthWrapper: Rebuilding - isLoading: ${authProvider.isLoading}, isAuthenticated: ${authProvider.isAuthenticated}, error: ${authProvider.error}',
         );
         print('AuthWrapper: Current user: ${authProvider.currentUser?.name}');
+        print(
+          'AuthWrapper: Current user role: ${authProvider.currentUser?.role}',
+        );
 
         // Show loading screen while checking authentication
         if (authProvider.isLoading) {
@@ -59,9 +78,9 @@ class AuthWrapper extends StatelessWidget {
         }
 
         // Show appropriate screen based on authentication status
-        if (authProvider.isAuthenticated) {
+        if (authProvider.isAuthenticated && authProvider.currentUser != null) {
           print('AuthWrapper: User is authenticated');
-          print('AuthWrapper: User role: ${authProvider.userRole}');
+          print('AuthWrapper: User role: ${authProvider.currentUser!.role}');
           print('AuthWrapper: Is admin: ${authProvider.isAdmin}');
 
           // User is authenticated, show appropriate home screen based on role

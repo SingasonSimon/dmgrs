@@ -394,7 +394,7 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(4);
+                onNavigationTap?.call(4); // Meetings is now at index 4
               }
             },
           ),
@@ -406,7 +406,7 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onProfileTap?.call();
+                onNavigationTap?.call(5); // Profile is now at index 5
               }
             },
           ),

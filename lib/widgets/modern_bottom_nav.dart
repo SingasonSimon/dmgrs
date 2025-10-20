@@ -101,10 +101,24 @@ class ModernBottomNav extends StatelessWidget {
         ),
         _buildNavItem(
           context,
+          icon: Icons.rotate_right_outlined,
+          activeIcon: Icons.rotate_right,
+          label: 'Allocations',
+          index: 3,
+        ),
+        _buildNavItem(
+          context,
+          icon: Icons.calendar_today_outlined,
+          activeIcon: Icons.calendar_today,
+          label: 'Meetings',
+          index: 4,
+        ),
+        _buildNavItem(
+          context,
           icon: Icons.person_outline,
           activeIcon: Icons.person,
           label: 'Profile',
-          index: 3,
+          index: 5,
         ),
       ];
     }

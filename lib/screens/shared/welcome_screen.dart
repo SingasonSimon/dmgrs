@@ -11,6 +11,8 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -19,7 +21,9 @@ class WelcomeScreen extends StatelessWidget {
               Theme.of(context).colorScheme.primary,
               Theme.of(context).colorScheme.primary.withOpacity(0.8),
               Theme.of(context).colorScheme.secondary,
+              Theme.of(context).colorScheme.secondary.withOpacity(0.9),
             ],
+            stops: const [0.0, 0.3, 0.7, 1.0],
           ),
         ),
         child: SafeArea(

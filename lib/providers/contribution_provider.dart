@@ -606,6 +606,12 @@ class ContributionProvider with ChangeNotifier {
   Future<int> getMemberCount() async {
     try {
       final members = await FirestoreService.getActiveMembers();
+      print('Found ${members.length} active members');
+      for (final member in members) {
+        print(
+          'Member: ${member.name} (${member.userId}) - Status: ${member.status}',
+        );
+      }
       return members.length;
     } catch (e) {
       print('Error getting member count: $e');

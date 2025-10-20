@@ -10,6 +10,8 @@ import '../../widgets/modern_bottom_nav.dart';
 import '../../widgets/modern_navigation_drawer.dart';
 import '../../widgets/modern_card.dart';
 import '../../widgets/simple_chart.dart';
+import '../../models/user_model.dart';
+import '../../services/firestore_service.dart';
 import '../shared/notifications_screen.dart';
 import 'admin_loan_screen.dart';
 import 'admin_allocation_screen.dart';
@@ -104,17 +106,89 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     });
   }
 
+  String _getAppBarTitle() {
+    switch (_currentIndex) {
+      case 0:
+        return 'Dashboard';
+      case 1:
+        return 'Members';
+      case 2:
+        return 'Loans';
+      case 3:
+        return 'Allocations';
+      case 4:
+        return 'Reports';
+      default:
+        return 'Admin Dashboard';
+    }
+  }
+
+  List<Widget> _getAppBarActions() {
+    switch (_currentIndex) {
+      case 0: // Dashboard
+        return [
+          IconButton(
+            icon: const Icon(Icons.wifi_protected_setup),
+            tooltip: 'Test M-Pesa Connection',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MpesaTestScreen(),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsScreen(),
+                ),
+              );
+            },
+          ),
+        ];
+      case 1: // Members
+        return [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminAddUserScreen(),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              // Trigger a rebuild of the members tab
+              setState(() {});
+            },
+          ),
+        ];
+      default:
+        return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: Text(_getAppBarTitle()),
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.menu),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
+        actions: _getAppBarActions(),
       ),
       drawer: ModernNavigationDrawer(
         onLogoutTap: _showLogoutDialog,
@@ -150,89 +224,53 @@ class _AdminDashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.wifi_protected_setup),
-            tooltip: 'Test M-Pesa Connection',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MpesaTestScreen(),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationsScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          final contributionProvider = Provider.of<ContributionProvider>(
-            context,
-            listen: false,
-          );
-          final loanProvider = Provider.of<LoanProvider>(
-            context,
-            listen: false,
-          );
-          final notificationProvider = Provider.of<NotificationProvider>(
-            context,
-            listen: false,
-          );
-          final authProvider = Provider.of<AuthProvider>(
-            context,
-            listen: false,
-          );
+    return RefreshIndicator(
+      onRefresh: () async {
+        final contributionProvider = Provider.of<ContributionProvider>(
+          context,
+          listen: false,
+        );
+        final loanProvider = Provider.of<LoanProvider>(context, listen: false);
+        final notificationProvider = Provider.of<NotificationProvider>(
+          context,
+          listen: false,
+        );
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-          await Future.wait([
-            contributionProvider.loadContributions(),
-            contributionProvider.loadAllocations(),
-            contributionProvider.loadCurrentCycle(),
-            contributionProvider.loadLendingPoolBalance(),
-            loanProvider.loadLoans(),
-            loanProvider.loadLendingPoolBalance(),
-            if (authProvider.isAuthenticated)
-              notificationProvider.loadUserNotifications(authProvider.userId),
-          ]);
-        },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Quick Stats
-              _buildQuickStats(context),
+        await Future.wait([
+          contributionProvider.loadContributions(),
+          contributionProvider.loadAllocations(),
+          contributionProvider.loadCurrentCycle(),
+          contributionProvider.loadLendingPoolBalance(),
+          loanProvider.loadLoans(),
+          loanProvider.loadLendingPoolBalance(),
+          if (authProvider.isAuthenticated)
+            notificationProvider.loadUserNotifications(authProvider.userId),
+        ]);
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Quick Stats
+            _buildQuickStats(context),
 
-              const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-              // Charts Section
-              _buildChartsSection(context),
+            // Charts Section
+            _buildChartsSection(context),
 
-              const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-              // Recent Activity
-              _buildRecentActivity(context),
+            // Recent Activity
+            _buildRecentActivity(context),
 
-              const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-              // Pending Actions
-              _buildPendingActions(context),
-            ],
-          ),
+            // Pending Actions
+            _buildPendingActions(context),
+          ],
         ),
       ),
     );
@@ -265,6 +303,24 @@ class _AdminDashboardTab extends StatelessWidget {
                 FutureBuilder<int>(
                   future: contributionProvider.getMemberCount(),
                   builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return StatCard(
+                        title: 'Total Members',
+                        value: 'Loading...',
+                        icon: Icons.people,
+                        iconColor: Colors.blue,
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return StatCard(
+                        title: 'Total Members',
+                        value: 'Error',
+                        icon: Icons.people,
+                        iconColor: Colors.red,
+                      );
+                    }
+
                     final memberCount = snapshot.data ?? 0;
                     return StatCard(
                       title: 'Total Members',
@@ -420,7 +476,7 @@ class _AdminDashboardTab extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             // Monthly Contributions Chart (Below)
-            SimpleBarChart(title: 'Monthly Contributions', data: monthlyData),
+            SimpleLineChart(title: 'Monthly Contributions', data: monthlyData),
           ],
         );
       },
@@ -756,30 +812,285 @@ class _AdminDashboardTab extends StatelessWidget {
   }
 }
 
-class _MembersTab extends StatelessWidget {
+class _MembersTab extends StatefulWidget {
   const _MembersTab();
 
   @override
+  State<_MembersTab> createState() => _MembersTabState();
+}
+
+class _MembersTabState extends State<_MembersTab> {
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  void _loadMembers() {
+    // Load members data when the tab is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // This will trigger a rebuild with member data
+      setState(() {});
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Members'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AdminAddUserScreen(),
+    return FutureBuilder<List<UserModel>>(
+      future: FirestoreService.getActiveMembers(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading members',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  snapshot.error.toString(),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadMembers,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final members = snapshot.data ?? [];
+
+        if (members.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.people_outline,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No members found',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Add your first member to get started',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdminAddUserScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Member'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            setState(() {});
+          },
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: members.length,
+            itemBuilder: (context, index) {
+              final member = members[index];
+              return ModernCard(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    child: Text(
+                      member.name.isNotEmpty
+                          ? member.name[0].toUpperCase()
+                          : 'M',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    member.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(member.email),
+                      if (member.phone.isNotEmpty) Text(member.phone),
+                      Text(
+                        'Joined: ${AppHelpers.formatDate(member.joinedAt)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'view':
+                          _viewMemberDetails(context, member);
+                          break;
+                        case 'edit':
+                          _editMember(context, member);
+                          break;
+                        case 'deactivate':
+                          _deactivateMember(context, member);
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'view',
+                        child: ListTile(
+                          leading: Icon(Icons.visibility),
+                          title: Text('View Details'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: ListTile(
+                          leading: Icon(Icons.edit),
+                          title: Text('Edit'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'deactivate',
+                        child: ListTile(
+                          leading: Icon(Icons.person_off),
+                          title: Text('Deactivate'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
           ),
+        );
+      },
+    );
+  }
+
+  void _viewMemberDetails(BuildContext context, UserModel member) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(member.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailRow('Email', member.email),
+            _buildDetailRow('Phone', member.phone),
+            _buildDetailRow('Role', member.role),
+            _buildDetailRow('Status', member.status),
+            _buildDetailRow('Joined', AppHelpers.formatDate(member.joinedAt)),
+            if (member.lastLoginAt != null)
+              _buildDetailRow(
+                'Last Login',
+                AppHelpers.formatDate(member.lastLoginAt!),
+              ),
+            _buildDetailRow(
+              'Consecutive Misses',
+              '${member.consecutiveMisses}',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
         ],
       ),
-      body: const Center(child: Text('Members management coming soon!')),
     );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  void _editMember(BuildContext context, UserModel member) {
+    // TODO: Implement edit member functionality
+    AppHelpers.showSnackBar(context, 'Edit member functionality coming soon');
+  }
+
+  void _deactivateMember(BuildContext context, UserModel member) {
+    AppHelpers.showConfirmationDialog(
+      context,
+      title: 'Deactivate Member',
+      message: 'Are you sure you want to deactivate ${member.name}?',
+    ).then((confirmed) async {
+      if (confirmed == true) {
+        try {
+          final updatedMember = member.copyWith(status: 'inactive');
+          await FirestoreService.updateUser(updatedMember);
+          if (mounted) {
+            AppHelpers.showSuccessSnackBar(
+              context,
+              'Member deactivated successfully',
+            );
+            setState(() {});
+          }
+        } catch (e) {
+          if (mounted) {
+            AppHelpers.showErrorSnackBar(
+              context,
+              'Failed to deactivate member: $e',
+            );
+          }
+        }
+      }
+    });
   }
 }
 

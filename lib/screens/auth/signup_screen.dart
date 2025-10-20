@@ -61,6 +61,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         context,
         'Account created successfully! You are now logged in.',
       );
+      print(
+        'SignupScreen: Signup successful, AuthWrapper should handle navigation',
+      );
       // Don't navigate - let AuthWrapper handle the navigation
       // The user is now authenticated and AuthWrapper will redirect to dashboard
     } else if (mounted) {
@@ -68,6 +71,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         context,
         authProvider.error ?? 'Sign up failed',
       );
+      print('SignupScreen: Signup failed - ${authProvider.error}');
     }
   }
 

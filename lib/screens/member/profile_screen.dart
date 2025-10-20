@@ -520,7 +520,6 @@ class ProfileScreen extends StatelessWidget {
       await authProvider.updateProfile(
         name: authProvider.userDisplayName,
         phone: authProvider.userPhone,
-        email: authProvider.userEmail,
         profileUrl: imageUrl,
       );
 

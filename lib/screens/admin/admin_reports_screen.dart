@@ -283,10 +283,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             ),
           ),
           const SizedBox(height: 16),
-          SimpleBarChart(
+          SimpleLineChart(
             data: monthlyData,
             title: '',
-            barColor: Theme.of(context).colorScheme.primary,
+            lineColor: Theme.of(context).colorScheme.primary,
           ),
         ],
       ),
@@ -525,10 +525,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             ),
           ),
           const SizedBox(height: 16),
-          SimpleBarChart(
+          SimpleLineChart(
             data: monthlyData,
             title: '',
-            barColor: Theme.of(context).colorScheme.primary,
+            lineColor: Theme.of(context).colorScheme.primary,
           ),
         ],
       ),
@@ -725,10 +725,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             ),
           ),
           const SizedBox(height: 16),
-          SimpleBarChart(
+          SimpleLineChart(
             data: monthlyData,
             title: '',
-            barColor: Theme.of(context).colorScheme.secondary,
+            lineColor: Theme.of(context).colorScheme.secondary,
           ),
         ],
       ),

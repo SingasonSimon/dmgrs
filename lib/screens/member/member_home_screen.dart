@@ -13,6 +13,7 @@ import 'contribution_screen.dart';
 import 'loan_screen.dart';
 import 'profile_screen.dart';
 import 'fund_allocation_screen.dart';
+import 'meetings_screen.dart';
 
 class MemberHomeScreen extends StatefulWidget {
   const MemberHomeScreen({super.key});
@@ -149,6 +150,8 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
                   _DashboardTab(onTabTapped: _onTabTapped),
                   const _PaymentsTab(),
                   const LoanScreen(),
+                  const FundAllocationScreen(),
+                  const MeetingsScreen(),
                   const ProfileScreen(),
                 ],
               ),
@@ -198,7 +201,10 @@ class _DashboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(''), automaticallyImplyLeading: false),
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        automaticallyImplyLeading: false,
+      ),
       body: RefreshIndicator(
         onRefresh: () async {
           final authProvider = Provider.of<AuthProvider>(

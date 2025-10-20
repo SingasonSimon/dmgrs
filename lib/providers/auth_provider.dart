@@ -27,9 +27,8 @@ class AuthProvider with ChangeNotifier {
     AuthService.authStateChanges.listen((user) async {
       print('AuthProvider: Auth state changed - User: ${user?.uid}');
       if (user != null) {
-        // Only load user data if we don't already have a current user
-        // This prevents overriding user data during sign-in
-        if (_currentUser == null) {
+        // Load user data if we don't have current user or if it's a different user
+        if (_currentUser == null || _currentUser!.userId != user.uid) {
           await _loadUserData(user.uid);
         }
       } else {
@@ -83,11 +82,14 @@ class AuthProvider with ChangeNotifier {
 
       if (userModel != null) {
         _currentUser = userModel;
+        print('AuthProvider: Sign up successful - User: ${_currentUser?.name}');
+        print('AuthProvider: User role: ${_currentUser?.role}');
         notifyListeners();
         return true;
       }
       return false;
     } catch (e) {
+      print('AuthProvider: Sign up error: $e');
       _setError(e.toString());
       return false;
     } finally {

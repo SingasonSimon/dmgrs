@@ -51,7 +51,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (success && mounted) {
       AppHelpers.showSuccessSnackBar(context, 'Login successful!');
-      print('LoginScreen: Login successful, should navigate to home screen');
+      print(
+        'LoginScreen: Login successful, AuthWrapper should handle navigation',
+      );
+      // Don't navigate manually - let AuthWrapper handle it
     } else if (mounted) {
       AppHelpers.showErrorSnackBar(
         context,

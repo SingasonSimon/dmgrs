@@ -116,6 +116,191 @@ class SimpleBarChart extends StatelessWidget {
   }
 }
 
+class SimpleLineChart extends StatelessWidget {
+  final List<ChartData> data;
+  final String title;
+  final double? maxValue;
+  final Color? lineColor;
+  final Color? fillColor;
+
+  const SimpleLineChart({
+    super.key,
+    required this.data,
+    required this.title,
+    this.maxValue,
+    this.lineColor,
+    this.fillColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Center(child: Text('No data available')),
+          ],
+        ),
+      );
+    }
+
+    final max =
+        maxValue ?? data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    final min = data.map((e) => e.value).reduce((a, b) => a < b ? a : b);
+    final range = max - min;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 200,
+            child: CustomPaint(
+              painter: LineChartPainter(
+                data: data,
+                max: max,
+                min: min,
+                range: range,
+                lineColor: lineColor ?? Theme.of(context).colorScheme.primary,
+                fillColor:
+                    fillColor ??
+                    (lineColor ?? Theme.of(context).colorScheme.primary)
+                        .withOpacity(0.1),
+              ),
+              child: Container(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Month labels
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: data.map((item) {
+              return Expanded(
+                child: Text(
+                  item.label,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class LineChartPainter extends CustomPainter {
+  final List<ChartData> data;
+  final double max;
+  final double min;
+  final double range;
+  final Color lineColor;
+  final Color fillColor;
+
+  LineChartPainter({
+    required this.data,
+    required this.max,
+    required this.min,
+    required this.range,
+    required this.lineColor,
+    required this.fillColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final fillPaint = Paint()
+      ..color = fillColor
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    final fillPath = Path();
+
+    final width = size.width;
+    final height = size.height;
+    final stepX = width / (data.length - 1);
+
+    // Start the fill path from the bottom
+    fillPath.moveTo(0, height);
+
+    for (int i = 0; i < data.length; i++) {
+      final x = i * stepX;
+      final normalizedValue = range > 0 ? (data[i].value - min) / range : 0.5;
+      final y = height - (normalizedValue * height);
+
+      if (i == 0) {
+        path.moveTo(x, y);
+        fillPath.lineTo(x, y);
+      } else {
+        path.lineTo(x, y);
+        fillPath.lineTo(x, y);
+      }
+
+      // Draw data points
+      canvas.drawCircle(Offset(x, y), 3, Paint()..color = lineColor);
+    }
+
+    // Complete the fill path
+    fillPath.lineTo(width, height);
+    fillPath.close();
+
+    // Draw fill area
+    canvas.drawPath(fillPath, fillPaint);
+
+    // Draw line
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
 class SimplePieChart extends StatelessWidget {
   final List<ChartData> data;
   final String title;

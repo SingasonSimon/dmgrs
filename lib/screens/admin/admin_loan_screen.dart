@@ -20,7 +20,7 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _loadData();
   }
 
@@ -46,8 +46,10 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
           tabs: const [
             Tab(text: 'Under Review', icon: Icon(Icons.hourglass_empty)),
+            Tab(text: 'Approved', icon: Icon(Icons.check_circle)),
             Tab(text: 'In Progress', icon: Icon(Icons.trending_up)),
             Tab(text: 'Fully Repaid', icon: Icon(Icons.done_all)),
             Tab(text: 'Declined', icon: Icon(Icons.cancel_outlined)),
@@ -64,6 +66,7 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
             controller: _tabController,
             children: [
               _buildPendingLoansTab(loanProvider),
+              _buildApprovedLoansTab(loanProvider),
               _buildActiveLoansTab(loanProvider),
               _buildCompletedLoansTab(loanProvider),
               _buildRejectedLoansTab(loanProvider),
@@ -94,6 +97,33 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
         itemBuilder: (context, index) {
           final loan = pendingLoans[index];
           return _buildPendingLoanCard(context, loan);
+        },
+      ),
+    );
+  }
+
+  Widget _buildApprovedLoansTab(LoanProvider loanProvider) {
+    final approvedLoans = loanProvider.loans
+        .where((loan) => loan.status == AppConstants.loanApproved)
+        .toList();
+
+    if (approvedLoans.isEmpty) {
+      return _buildEmptyState(
+        context,
+        'No Approved Loans',
+        'There are currently no approved loans waiting for disbursement.',
+        Icons.check_circle_outline,
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async => _loadData(),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        itemCount: approvedLoans.length,
+        itemBuilder: (context, index) {
+          final loan = approvedLoans[index];
+          return _buildApprovedLoanCard(context, loan);
         },
       ),
     );
@@ -281,6 +311,136 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildApprovedLoanCard(BuildContext context, loan) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: () => _navigateToLoanDetails(loan),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppHelpers.formatCurrency(loan.finalAmount),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Chip(
+                    label: Text(
+                      'Approved',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    backgroundColor: Colors.green.withOpacity(0.1),
+                    labelStyle: const TextStyle(color: Colors.green),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(loan.purpose, style: Theme.of(context).textTheme.bodyLarge),
+              const SizedBox(height: 8),
+              FutureBuilder(
+                future: _getUserInfo(loan.userId),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData && snapshot.data != null) {
+                    final user = snapshot.data!;
+                    return Row(
+                      children: [
+                        Icon(
+                          Icons.person,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${user['name']} (${user['phone']})',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Icon(
+                        Icons.person,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Loading user info...',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Approved: ${AppHelpers.formatDate(loan.approvalDate ?? loan.requestDate)}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info, size: 16, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This loan is approved and ready for disbursement.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _disburseLoan(loan),
+                  icon: const Icon(Icons.payment),
+                  label: const Text('Disburse Loan'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
               ),
             ],
           ),
@@ -573,6 +733,14 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
     });
   }
 
+  void _disburseLoan(loan) {
+    showDialog(
+      context: context,
+      builder: (context) =>
+          _DisburseLoanDialog(loan: loan, onLoanDisbursed: _loadData),
+    );
+  }
+
   void _rejectLoan(loan) {
     showDialog(
       context: context,
@@ -594,6 +762,185 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => LoanRepaymentScreen(loan: loan)),
+    );
+  }
+}
+
+class _DisburseLoanDialog extends StatefulWidget {
+  final loan;
+  final VoidCallback onLoanDisbursed;
+
+  const _DisburseLoanDialog({
+    required this.loan,
+    required this.onLoanDisbursed,
+  });
+
+  @override
+  State<_DisburseLoanDialog> createState() => _DisburseLoanDialogState();
+}
+
+class _DisburseLoanDialogState extends State<_DisburseLoanDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _mpesaRefController = TextEditingController();
+  String _disbursementMethod = 'mpesa';
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _mpesaRefController.dispose();
+    super.dispose();
+  }
+
+  void _disburseLoan() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final loanProvider = Provider.of<LoanProvider>(context, listen: false);
+      final success = await loanProvider.disburseLoan(
+        loanId: widget.loan.loanId,
+        disbursementMethod: _disbursementMethod,
+        mpesaRef: _mpesaRefController.text.trim().isEmpty
+            ? null
+            : _mpesaRefController.text.trim(),
+      );
+
+      if (mounted) {
+        if (success) {
+          AppHelpers.showSuccessSnackBar(
+            context,
+            'Loan disbursed successfully!',
+          );
+          Navigator.pop(context);
+          widget.onLoanDisbursed();
+        } else {
+          AppHelpers.showErrorSnackBar(
+            context,
+            'Failed to disburse loan: ${loanProvider.error ?? "Unknown error"}',
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        AppHelpers.showErrorSnackBar(context, 'Failed to disburse loan: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Disburse Loan'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Loan Details',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Amount: ${AppHelpers.formatCurrency(widget.loan.finalAmount)}',
+                  ),
+                  Text('Purpose: ${widget.loan.purpose}'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Disbursement Method',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _disbursementMethod,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'mpesa', child: Text('M-Pesa')),
+                DropdownMenuItem(
+                  value: 'bank_transfer',
+                  child: Text('Bank Transfer'),
+                ),
+                DropdownMenuItem(value: 'cash', child: Text('Cash')),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _disbursementMethod = value!;
+                });
+              },
+            ),
+            if (_disbursementMethod == 'mpesa') ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _mpesaRefController,
+                decoration: const InputDecoration(
+                  labelText: 'M-Pesa Reference (Optional)',
+                  border: OutlineInputBorder(),
+                  hintText: 'Enter M-Pesa transaction reference',
+                ),
+                validator: (value) {
+                  if (_disbursementMethod == 'mpesa' &&
+                      (value == null || value.trim().isEmpty)) {
+                    return 'M-Pesa reference is required for M-Pesa disbursements';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _disburseLoan,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+          ),
+          child: _isLoading
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Disburse Loan'),
+        ),
+      ],
     );
   }
 }
