@@ -122,7 +122,11 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
       (sum, contribution) => sum + contribution.amount,
     );
 
-    // Removed unused totalLoans to satisfy linter
+    // Total loans amount
+    final totalLoans = loanProvider.loans.fold(
+      0.0,
+      (sum, loan) => sum + loan.finalAmount,
+    );
 
     final activeLoans = loanProvider.loans
         .where((loan) => loan.status == AppConstants.loanActive)

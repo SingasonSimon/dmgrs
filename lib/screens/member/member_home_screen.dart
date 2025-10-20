@@ -93,13 +93,11 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      onWillPop: () async {
-        // Prevent back button from closing app
-        if (_currentIndex > 0) {
-          _onTabTapped(0); // Go to dashboard
-          return false;
+      canPop: _currentIndex == 0,
+      onPopInvoked: (didPop) {
+        if (!didPop && _currentIndex > 0) {
+          _onTabTapped(0);
         }
-        return true; // Allow back button to close app only from dashboard
       },
       child: Scaffold(
         drawer: ModernNavigationDrawer(
