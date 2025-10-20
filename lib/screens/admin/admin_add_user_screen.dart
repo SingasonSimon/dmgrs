@@ -22,7 +22,7 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _groupIdsController = TextEditingController();
+  List<String> _selectedGroupIds = [];
 
   String _selectedRole = AppConstants.memberRole;
   bool _isLoading = false;
@@ -38,7 +38,6 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _groupIdsController.dispose();
     super.dispose();
   }
 
@@ -218,17 +217,26 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Groups (comma-separated IDs for now)
-            TextFormField(
-              controller: _groupIdsController,
-              decoration: InputDecoration(
-                labelText: 'Group IDs (comma-separated)',
-                prefixIcon: const Icon(Icons.groups),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                hintText: 'e.g. g1, g2',
-              ),
+            // Groups selector
+            OutlinedButton.icon(
+              onPressed: _openGroupPicker,
+              icon: const Icon(Icons.groups),
+              label: const Text('Assign Groups'),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: -8,
+              children: _selectedGroupIds
+                  .map((id) => Chip(
+                        label: Text(id),
+                        onDeleted: () {
+                          setState(() {
+                            _selectedGroupIds.remove(id);
+                          });
+                        },
+                      ))
+                  .toList(),
             ),
 
             // Role Selection
@@ -419,11 +427,7 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
           role: _selectedRole,
           joinedAt: DateTime.now(),
           status: 'active',
-          groupIds: _groupIdsController.text
-              .split(',')
-              .map((e) => e.trim())
-              .where((e) => e.isNotEmpty)
-              .toList(),
+          groupIds: _selectedGroupIds,
         );
 
         await FirestoreService.createUser(userModel);
@@ -456,5 +460,37 @@ class _AdminAddUserScreenState extends State<AdminAddUserScreen> {
         });
       }
     }
+  }
+
+  Future<void> _openGroupPicker() async {
+    // Simple input dialog placeholder: accept comma-separated IDs
+    final controller = TextEditingController(text: _selectedGroupIds.join(', '));
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Assign Groups'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: 'e.g. g1, g2'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final ids = controller.text
+                  .split(',')
+                  .map((e) => e.trim())
+                  .where((e) => e.isNotEmpty)
+                  .toList();
+              setState(() {
+                _selectedGroupIds = ids;
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 }

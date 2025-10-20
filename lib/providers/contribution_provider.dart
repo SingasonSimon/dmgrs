@@ -286,7 +286,6 @@ class ContributionProvider with ChangeNotifier {
       }
 
       final contributionId = AppHelpers.generateRandomId();
-      final now = DateTime.now();
       final dueDate = DateTime(now.year, now.month + 1, 1);
 
       final contribution = ContributionModel(
