@@ -15,6 +15,7 @@ class MeetingService {
     required String organizerName,
     List<String>? attendeeIds,
     String? meetingType,
+    String? googleMeetUrl,
   }) async {
     try {
       final meetingId = _firestore
@@ -32,7 +33,7 @@ class MeetingService {
         attendeeIds: attendeeIds ?? [],
         meetingType: meetingType ?? 'general',
         status: AppConstants.meetingScheduled,
-        googleMeetUrl: _generateGoogleMeetUrl(meetingId),
+        googleMeetUrl: googleMeetUrl ?? '',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -49,12 +50,6 @@ class MeetingService {
     }
   }
 
-  // Generate Google Meet URL
-  static String _generateGoogleMeetUrl(String meetingId) {
-    // For now, we'll generate a simulated Google Meet URL
-    // In production, you would integrate with Google Meet API
-    return 'https://meet.google.com/dmgrs-$meetingId';
-  }
 
   // Get all meetings
   static Future<List<MeetingModel>> getAllMeetings() async {
@@ -248,6 +243,7 @@ class MeetingService {
     required String organizerName,
     List<String>? attendeeIds,
     String? meetingType,
+    String? googleMeetUrl,
   }) async {
     try {
       final meetingIds = <String>[];
@@ -262,6 +258,7 @@ class MeetingService {
           organizerName: organizerName,
           attendeeIds: attendeeIds,
           meetingType: meetingType,
+          googleMeetUrl: googleMeetUrl,
         );
         meetingIds.add(meetingId);
       }

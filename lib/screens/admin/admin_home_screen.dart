@@ -9,6 +9,7 @@ import '../../utils/constants.dart';
 import '../../utils/phone_formatter.dart';
 import '../../widgets/modern_bottom_nav.dart';
 import '../../widgets/modern_card.dart';
+import '../../widgets/modern_navigation_drawer.dart';
 import '../../widgets/simple_chart.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
@@ -17,8 +18,10 @@ import 'admin_loan_screen.dart';
 import 'admin_allocation_screen.dart';
 import 'admin_reports_screen.dart';
 import 'admin_groups_screen.dart';
+import 'admin_meetings_screen.dart';
 import 'admin_add_user_screen.dart';
 import 'admin_edit_user_screen.dart';
+import 'admin_profile_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -176,7 +179,38 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_getAppBarTitle()),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         actions: _getAppBarActions(),
+      ),
+      drawer: ModernNavigationDrawer(
+        isAdmin: true,
+        onNavigationTap: (index) {
+          Navigator.of(context).pop();
+          setState(() {
+            _currentIndex = index;
+            _pageController.jumpToPage(index);
+          });
+        },
+        onProfileTap: () {
+          Navigator.of(context).pop();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminProfileScreen()),
+          );
+        },
+        onLogoutTap: () async {
+          Navigator.of(context).pop();
+          final authProvider = Provider.of<AuthProvider>(
+            context,
+            listen: false,
+          );
+          await authProvider.signOut();
+        },
       ),
       body: PageView(
         controller: _pageController,
@@ -191,6 +225,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           _LoansTab(),
           _AllocationsTab(),
           AdminReportsScreen(),
+          AdminMeetingsScreen(),
         ],
       ),
       bottomNavigationBar: ModernBottomNav(

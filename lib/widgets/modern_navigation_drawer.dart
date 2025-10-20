@@ -315,6 +315,17 @@ class ModernNavigationDrawer extends StatelessWidget {
               }
             },
           ),
+          _buildMenuItem(
+            context,
+            icon: Icons.calendar_today,
+            title: 'Meetings',
+            onTap: () {
+              if (context.mounted) {
+                Navigator.pop(context);
+                onNavigationTap?.call(5);
+              }
+            },
+          ),
           const Divider(),
           _buildMenuItem(
             context,

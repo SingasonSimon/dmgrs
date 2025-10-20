@@ -7,6 +7,7 @@ import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
 import '../../widgets/modern_bottom_nav.dart';
 import '../../widgets/modern_card.dart';
+import '../../widgets/modern_navigation_drawer.dart';
 import '../shared/notifications_screen.dart';
 import 'contribution_screen.dart';
 import 'loan_screen.dart';
@@ -135,6 +136,27 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
             ),
           ],
         ),
+        drawer: ModernNavigationDrawer(
+          isAdmin: false,
+          onNavigationTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          onProfileTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            );
+          },
+          onLogoutTap: () async {
+            final authProvider = Provider.of<AuthProvider>(
+              context,
+              listen: false,
+            );
+            await authProvider.signOut();
+          },
+        ),
         bottomNavigationBar: ModernBottomNav(
           currentIndex: _currentIndex,
           onTap: _onTabTapped,
@@ -155,6 +177,12 @@ class _PaymentsTab extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Payments'),
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
+          ),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Contributions', icon: Icon(Icons.payment)),
@@ -180,7 +208,12 @@ class _DashboardTab extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
-        automaticallyImplyLeading: false,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () async {

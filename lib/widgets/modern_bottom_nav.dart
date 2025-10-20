@@ -75,6 +75,13 @@ class ModernBottomNav extends StatelessWidget {
           label: 'Reports',
           index: 4,
         ),
+        _buildNavItem(
+          context,
+          icon: Icons.calendar_today_outlined,
+          activeIcon: Icons.calendar_today,
+          label: 'Meetings',
+          index: 5,
+        ),
       ];
     } else {
       return [
