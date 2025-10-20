@@ -190,11 +190,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       drawer: ModernNavigationDrawer(
         isAdmin: true,
         onNavigationTap: (index) {
-          Navigator.of(context).pop();
           setState(() {
             _currentIndex = index;
             _pageController.jumpToPage(index);
           });
+          Navigator.of(context).pop();
         },
         onProfileTap: () {
           Navigator.of(context).pop();

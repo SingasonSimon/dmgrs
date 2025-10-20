@@ -141,6 +141,11 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
           onNavigationTap: (index) {
             setState(() {
               _currentIndex = index;
+              _pageController.animateToPage(
+                index,
+                duration: AppConstants.mediumAnimation,
+                curve: Curves.easeInOut,
+              );
             });
           },
           onProfileTap: () {
