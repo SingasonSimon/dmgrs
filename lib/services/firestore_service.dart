@@ -37,6 +37,38 @@ class FirestoreService {
     _cacheTimestamps.clear();
   }
 
+  // Check if device is connected to internet
+  static Future<bool> isConnected() async {
+    try {
+      // Simple connectivity check by trying to access Firestore
+      await _firestore.collection('__connectivity_test__').limit(1).get();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Retry mechanism for failed operations
+  static Future<T> retryOperation<T>(
+    Future<T> Function() operation, {
+    int maxRetries = 3,
+    Duration delay = const Duration(seconds: 1),
+  }) async {
+    int attempts = 0;
+    while (attempts < maxRetries) {
+      try {
+        return await operation();
+      } catch (e) {
+        attempts++;
+        if (attempts >= maxRetries) {
+          throw Exception('Operation failed after $maxRetries attempts: $e');
+        }
+        await Future.delayed(delay * attempts); // Exponential backoff
+      }
+    }
+    throw Exception('Unexpected error in retry mechanism');
+  }
+
   // Batch operations for better performance
   static Future<void> batchUpdateUsers(
     List<Map<String, dynamic>> updates,
@@ -212,34 +244,25 @@ class FirestoreService {
     try {
       final queryLower = query.toLowerCase();
 
-      // Use Firestore queries on existing fields
-      // Search by name (case-insensitive)
-      final nameQuery = await _firestore
+      // Use a simpler approach to avoid compound index requirements
+      // Get a larger set of users and filter in memory
+      final allUsers = await _firestore
           .collection(AppConstants.usersCollection)
-          .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThan: query + 'z')
-          .limit(15)
-          .get();
-
-      // Search by phone
-      final phoneQuery = await _firestore
-          .collection(AppConstants.usersCollection)
-          .where('phone', isGreaterThanOrEqualTo: query)
-          .where('phone', isLessThan: query + 'z')
-          .limit(10)
+          .limit(50)
           .get();
 
       final results = <Map<String, dynamic>>[];
       final seenIds = <String>{};
 
-      // Add name search results
-      for (final doc in nameQuery.docs) {
-        if (seenIds.length >= 20) break;
+      // Filter users in memory by name and phone
+      for (final doc in allUsers.docs) {
+        if (seenIds.length >= 25) break;
+
         final data = doc.data();
         final name = (data['name'] ?? '').toString().toLowerCase();
+        final phone = (data['phone'] ?? '').toString().toLowerCase();
 
-        // Filter results that actually contain the query
-        if (name.contains(queryLower)) {
+        if (name.contains(queryLower) || phone.contains(queryLower)) {
           results.add({
             'userId': doc.id,
             'name': data['name'],
@@ -249,28 +272,6 @@ class FirestoreService {
             'role': data['role'] ?? 'member',
           });
           seenIds.add(doc.id);
-        }
-      }
-
-      // Add phone search results (excluding already seen users)
-      for (final doc in phoneQuery.docs) {
-        if (seenIds.length >= 20) break;
-        if (!seenIds.contains(doc.id)) {
-          final data = doc.data();
-          final phone = (data['phone'] ?? '').toString().toLowerCase();
-
-          // Filter results that actually contain the query
-          if (phone.contains(queryLower)) {
-            results.add({
-              'userId': doc.id,
-              'name': data['name'],
-              'phone': data['phone'],
-              'email': data['email'],
-              'status': data['status'] ?? 'active',
-              'role': data['role'] ?? 'member',
-            });
-            seenIds.add(doc.id);
-          }
         }
       }
 
@@ -1009,17 +1010,23 @@ class FirestoreService {
       final batch = _firestore.batch();
 
       // Get total contributions for the cycle period
+      // Optimized to avoid compound index requirements
       final contributionsSnapshot = await _firestore
           .collection(AppConstants.contributionsCollection)
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(cycle.startDate),
-          )
-          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(cycle.endDate))
           .where('status', isEqualTo: AppConstants.paymentCompleted)
           .get();
 
-      final totalContributions = contributionsSnapshot.docs.fold(
+      // Filter by date in memory to avoid compound index requirements
+      final filteredDocs = contributionsSnapshot.docs.where((doc) {
+        final data = doc.data();
+        final date = (data['date'] as Timestamp).toDate();
+        return date.isAfter(
+              cycle.startDate.subtract(const Duration(days: 1)),
+            ) &&
+            date.isBefore(cycle.endDate.add(const Duration(days: 1)));
+      }).toList();
+
+      final totalContributions = filteredDocs.fold(
         0.0,
         (sum, doc) => sum + (doc.data()['amount'] ?? 0.0),
       );
@@ -1213,19 +1220,46 @@ class FirestoreService {
   }
 
   // Contributions - utility to check if user has a contribution in a month
+  // Optimized to avoid compound index requirements by using a single query
   static Future<bool> hasUserContributionInMonth({
     required String userId,
     required int year,
     required int month,
   }) async {
-    final monthStart = DateTime(year, month, 1);
-    final monthEnd = DateTime(year, month + 1, 1);
-    final snapshot = await _firestore
-        .collection(AppConstants.contributionsCollection)
-        .where('userId', isEqualTo: userId)
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(monthStart))
-        .where('date', isLessThan: Timestamp.fromDate(monthEnd))
-        .get();
-    return snapshot.docs.isNotEmpty;
+    try {
+      // First try with a simpler query that doesn't require compound indexes
+      // Query by userId only and filter by date in memory
+      final snapshot = await _firestore
+          .collection(AppConstants.contributionsCollection)
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      // Filter results in memory to check for contributions in the specific month
+      final monthStart = DateTime(year, month, 1);
+      final monthEnd = DateTime(year, month + 1, 1);
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final date = (data['date'] as Timestamp).toDate();
+        if (date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
+            date.isBefore(monthEnd)) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      // Fallback to original method if needed
+      print('Warning: Compound query failed, using fallback method: $e');
+      final monthStart = DateTime(year, month, 1);
+      final monthEnd = DateTime(year, month + 1, 1);
+      final snapshot = await _firestore
+          .collection(AppConstants.contributionsCollection)
+          .where('userId', isEqualTo: userId)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(monthStart))
+          .where('date', isLessThan: Timestamp.fromDate(monthEnd))
+          .get();
+      return snapshot.docs.isNotEmpty;
+    }
   }
 }

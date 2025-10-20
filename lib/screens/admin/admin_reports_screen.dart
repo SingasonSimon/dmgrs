@@ -934,15 +934,6 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
         .where((c) => c.status == AppConstants.paymentCompleted)
         .fold(0.0, (sum, contribution) => sum + contribution.amount);
 
-    // Count only active and completed loans
-    final totalLoans = loanProvider.loans
-        .where(
-          (loan) =>
-              loan.status == AppConstants.loanActive ||
-              loan.status == AppConstants.loanCompleted,
-        )
-        .fold(0.0, (sum, loan) => sum + loan.finalAmount);
-
     // Calculate interest from completed loans only
     final totalInterest = loanProvider.loans
         .where((loan) => loan.status == AppConstants.loanCompleted)

@@ -273,6 +273,11 @@ class ContributionProvider with ChangeNotifier {
       _setLoading(true);
       _clearError();
 
+      // Validate amount
+      if (amount <= 0) {
+        throw Exception('Contribution amount must be greater than zero.');
+      }
+
       // Enforce one contribution per user per calendar month
       final now = DateTime.now();
       final alreadyContributed =
@@ -297,14 +302,18 @@ class ContributionProvider with ChangeNotifier {
         dueDate: dueDate,
       );
 
-      // Save contribution to Firestore
-      await FirestoreService.createContribution(contribution);
+      // Save contribution to Firestore with retry mechanism
+      await FirestoreService.retryOperation(
+        () => FirestoreService.createContribution(contribution),
+      );
 
-      // Initiate M-Pesa STK Push
-      final mpesaResponse = await MpesaService.simulateSTKPush(
-        phoneNumber: phoneNumber,
-        amount: amount,
-        accountReference: 'CONTRIBUTION_$contributionId',
+      // Initiate M-Pesa STK Push with retry mechanism
+      final mpesaResponse = await FirestoreService.retryOperation(
+        () => MpesaService.simulateSTKPush(
+          phoneNumber: phoneNumber,
+          amount: amount,
+          accountReference: 'CONTRIBUTION_$contributionId',
+        ),
       );
 
       if (mpesaResponse != null && mpesaResponse['ResponseCode'] == '0') {
@@ -312,7 +321,10 @@ class ContributionProvider with ChangeNotifier {
         final updatedContribution = contribution.copyWith(
           mpesaRef: mpesaResponse['CheckoutRequestID'],
         );
-        await FirestoreService.updateContribution(updatedContribution);
+
+        await FirestoreService.retryOperation(
+          () => FirestoreService.updateContribution(updatedContribution),
+        );
 
         // Add to local list
         _contributions.insert(0, updatedContribution);
@@ -320,9 +332,12 @@ class ContributionProvider with ChangeNotifier {
 
         return true;
       } else {
-        throw Exception('M-Pesa STK Push failed');
+        throw Exception(
+          'M-Pesa STK Push failed: ${mpesaResponse?['CustomerMessage'] ?? 'Unknown error'}',
+        );
       }
     } catch (e) {
+      print('Error creating contribution: $e');
       _setError('Failed to create contribution: $e');
       return false;
     } finally {
@@ -393,6 +408,11 @@ class ContributionProvider with ChangeNotifier {
         'Processing fund allocation for contribution: ${contribution.amount}',
       );
 
+      // Validate contribution
+      if (contribution.amount <= 0) {
+        throw Exception('Invalid contribution amount for allocation');
+      }
+
       // Calculate amounts
       final lendingPoolAmount = AppHelpers.calculateLendingPoolAmount(
         contribution.amount,
@@ -403,8 +423,10 @@ class ContributionProvider with ChangeNotifier {
       print('Lending pool amount: $lendingPoolAmount');
       print('Member distribution amount: $memberDistributionAmount');
 
-      // Update lending pool
-      await _updateLendingPool(lendingPoolAmount);
+      // Update lending pool with retry mechanism
+      await FirestoreService.retryOperation(
+        () => _updateLendingPool(lendingPoolAmount),
+      );
 
       // Check if cycle exists, if not create one
       if (_currentCycle == null) {
@@ -417,13 +439,16 @@ class ContributionProvider with ChangeNotifier {
       // Allocate to member if cycle is active
       if (_currentCycle != null && _currentCycle!.isActiveCycle) {
         print('Allocating to member: ${_currentCycle!.nextMember}');
-        await _allocateToMember(memberDistributionAmount);
+        await FirestoreService.retryOperation(
+          () => _allocateToMember(memberDistributionAmount),
+        );
       } else {
         print('No active cycle or cycle is not active');
       }
     } catch (e) {
       print('Error in fund allocation: $e');
       _setError('Failed to process fund allocation: $e');
+      // Don't rethrow - allocation failure shouldn't fail the contribution
     }
   }
 

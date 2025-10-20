@@ -13,7 +13,6 @@ import '../../widgets/simple_chart.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
 import '../shared/notifications_screen.dart';
-import '../shared/welcome_screen.dart';
 import 'admin_loan_screen.dart';
 import 'admin_allocation_screen.dart';
 import 'admin_reports_screen.dart';
@@ -93,27 +92,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         curve: Curves.easeInOut,
       );
     }
-  }
-
-  void _showLogoutDialog() {
-    AppHelpers.showConfirmationDialog(
-      context,
-      title: 'Logout',
-      message: 'Are you sure you want to logout?',
-    ).then((confirmed) async {
-      if (confirmed == true) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        await authProvider.signOut();
-        if (mounted) {
-          // Navigate back to welcome screen
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-            (route) => false,
-          );
-        }
-      }
-    });
   }
 
   String _getAppBarTitle() {
