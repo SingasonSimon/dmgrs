@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 import '../../providers/auth_provider.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
+import '../../services/image_picker_service.dart';
+import '../../services/s3_service.dart';
 import 'change_password_screen.dart';
 import 'edit_profile_screen.dart';
 
@@ -450,14 +453,92 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _pickImageFromCamera(BuildContext context) {
-    // TODO: Implement camera image picker
-    AppHelpers.showSnackBar(context, 'Camera functionality coming soon!');
+  Future<void> _pickImageFromCamera(BuildContext context) async {
+    try {
+      final file = await ImagePickerService.pickImageFromCamera();
+      if (file != null && context.mounted) {
+        await _uploadProfileImage(context, file);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        AppHelpers.showErrorSnackBar(context, e.toString());
+      }
+    }
   }
 
-  void _pickImageFromGallery(BuildContext context) {
-    // TODO: Implement gallery image picker
-    AppHelpers.showSnackBar(context, 'Gallery functionality coming soon!');
+  Future<void> _pickImageFromGallery(BuildContext context) async {
+    try {
+      final file = await ImagePickerService.pickImageFromGallery();
+      if (file != null && context.mounted) {
+        await _uploadProfileImage(context, file);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        AppHelpers.showErrorSnackBar(context, e.toString());
+      }
+    }
+  }
+
+  Future<void> _uploadProfileImage(BuildContext context, File imageFile) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Uploading image...'),
+            ],
+          ),
+        ),
+      );
+
+      // Validate image file
+      if (!ImagePickerService.isValidImageFile(imageFile)) {
+        throw Exception(
+          'Invalid image format. Please select JPG, PNG, or GIF.',
+        );
+      }
+
+      if (!ImagePickerService.isFileSizeValid(imageFile)) {
+        throw Exception(
+          'Image file is too large. Please select an image under 5MB.',
+        );
+      }
+
+      // Upload to S3
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final imageUrl = await S3Service.uploadProfileImage(
+        imageFile: imageFile,
+        userId: authProvider.userId,
+      );
+
+      // Update user profile with new image URL
+      await authProvider.updateProfile(
+        name: authProvider.userDisplayName,
+        phone: authProvider.userPhone,
+        email: authProvider.userEmail,
+        profileUrl: imageUrl,
+      );
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.pop(context);
+        AppHelpers.showSuccessSnackBar(
+          context,
+          'Profile picture updated successfully!',
+        );
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.pop(context);
+        AppHelpers.showErrorSnackBar(context, 'Failed to upload image: $e');
+      }
+    }
   }
 
   void _showHelpDialog(BuildContext context) {

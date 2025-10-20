@@ -1,11 +1,12 @@
-# M-Pesa Daraja API Setup Guide
+# M-Pesa Daraja 3.0 API Setup Guide
 
 ## 1. Get Your Credentials
 
-### Register at Safaricom Developer Portal
-1. Go to: https://developer.safaricom.co.ke/
-2. Create account and register your app
-3. Get your credentials:
+### Register at Daraja 3.0 Platform
+1. Go to: https://daraja.safaricom.co.ke/
+2. Sign up for a new account
+3. Create a sandbox app for testing
+4. Get your credentials:
    - Consumer Key
    - Consumer Secret
    - Business Short Code (for production)
@@ -16,10 +17,17 @@
 Replace the placeholder values in `lib/utils/constants.dart`:
 
 ```dart
-// Replace these with your actual credentials
-static const String mpesaConsumerKey = 'YOUR_ACTUAL_CONSUMER_KEY';
-static const String mpesaConsumerSecret = 'YOUR_ACTUAL_CONSUMER_SECRET';
+// Replace these with your actual Daraja 3.0 credentials
+static const String mpesaConsumerKey = 'YOUR_DARAJA_3_CONSUMER_KEY';
+static const String mpesaConsumerSecret = 'YOUR_DARAJA_3_CONSUMER_SECRET';
 static const String mpesaCallbackUrl = 'https://your-domain.com/mpesa/callback';
+
+// For production, also update:
+static const String mpesaBusinessShortCode = 'YOUR_PRODUCTION_SHORT_CODE';
+static const String mpesaPasskey = 'YOUR_PRODUCTION_PASSKEY';
+
+// Set to false when ready for production
+static const bool isMpesaSandbox = true;
 ```
 
 ## 3. Test with Sandbox

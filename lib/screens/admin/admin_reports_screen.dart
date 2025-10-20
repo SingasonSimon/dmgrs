@@ -68,25 +68,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
           ],
         ),
         actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              setState(() {
-                _selectedPeriod = value;
-              });
-            },
-            itemBuilder: (context) => _periods.map((period) {
-              return PopupMenuItem(value: period, child: Text(period));
-            }).toList(),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(_selectedPeriod),
-                  const Icon(Icons.arrow_drop_down),
-                ],
-              ),
-            ),
+          IconButton(
+            icon: const Icon(Icons.calendar_month),
+            tooltip: 'Select Period',
+            onPressed: _showPeriodSelector,
           ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],
@@ -331,6 +316,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
         ? (completedLoans / totalLoansCount) * 100
         : 0.0;
 
+    // Get actual member count from Firestore
     final memberCount = contributionProvider.contributions
         .map((c) => c.userId)
         .toSet()
@@ -575,6 +561,15 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
           ),
           const SizedBox(height: 16),
           ...topContributors.map((entry) {
+            // For now, show user ID until we implement user lookup
+            final userName = 'User ${entry.key.substring(0, 8)}...';
+            final userInitials = userName
+                .split(' ')
+                .map((n) => n[0])
+                .take(2)
+                .join('')
+                .toUpperCase();
+
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
@@ -583,7 +578,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
                     radius: 20,
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     child: Text(
-                      entry.key.substring(0, 2).toUpperCase(),
+                      userInitials,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -596,7 +591,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'User ${entry.key.substring(0, 8)}...',
+                          userName,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurface,
@@ -1164,5 +1159,35 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
       default:
         return status;
     }
+  }
+
+  void _showPeriodSelector() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Period'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: _periods.map((period) {
+            return ListTile(
+              title: Text(period),
+              selected: period == _selectedPeriod,
+              onTap: () {
+                setState(() {
+                  _selectedPeriod = period;
+                });
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 }

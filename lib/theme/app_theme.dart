@@ -5,11 +5,20 @@ enum AppThemeMode { light, dark, blue, green, purple }
 
 class AppTheme {
   static AppThemeMode _currentTheme = AppThemeMode.light;
+  static bool _darkModeEnabled = false; // Disable dark mode by default
 
   static AppThemeMode get currentTheme => _currentTheme;
+  static bool get isDarkModeEnabled => _darkModeEnabled;
 
   static void setTheme(AppThemeMode theme) {
     _currentTheme = theme;
+  }
+
+  static void setDarkModeEnabled(bool enabled) {
+    _darkModeEnabled = enabled;
+    if (!enabled && _currentTheme == AppThemeMode.dark) {
+      _currentTheme = AppThemeMode.light;
+    }
   }
 
   static ThemeData get lightTheme {

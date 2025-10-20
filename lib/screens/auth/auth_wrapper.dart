@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import 'login_screen.dart';
 import '../member/member_home_screen.dart';
 import '../admin/admin_home_screen.dart';
+import '../shared/welcome_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -73,9 +73,11 @@ class AuthWrapper extends StatelessWidget {
             return const MemberHomeScreen();
           }
         } else {
-          print('AuthWrapper: User is not authenticated, showing login screen');
-          // User is not authenticated, show login screen
-          return const LoginScreen();
+          print(
+            'AuthWrapper: User is not authenticated, showing welcome screen',
+          );
+          // User is not authenticated, show welcome screen
+          return const WelcomeScreen();
         }
       },
     );

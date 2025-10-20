@@ -220,29 +220,34 @@ class ModernNavigationDrawer extends StatelessWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: AppThemeMode.values.map((theme) {
-                  final isSelected = themeProvider.currentTheme == theme;
-                  return GestureDetector(
-                    onTap: () => themeProvider.setTheme(theme),
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: _getThemeColor(theme),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.transparent,
-                          width: 3,
+                children: AppThemeMode.values
+                    .where(
+                      (theme) => theme != AppThemeMode.dark,
+                    ) // Exclude dark mode
+                    .map((theme) {
+                      final isSelected = themeProvider.currentTheme == theme;
+                      return GestureDetector(
+                        onTap: () => themeProvider.setTheme(theme),
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: _getThemeColor(theme),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.transparent,
+                              width: 3,
+                            ),
+                          ),
+                          child: isSelected
+                              ? Icon(Icons.check, color: Colors.white, size: 20)
+                              : null,
                         ),
-                      ),
-                      child: isSelected
-                          ? Icon(Icons.check, color: Colors.white, size: 20)
-                          : null,
-                    ),
-                  );
-                }).toList(),
+                      );
+                    })
+                    .toList(),
               ),
             ],
           ),
@@ -260,8 +265,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.dashboard,
             title: 'Dashboard',
             onTap: () {
-              Navigator.pop(context);
-              onNavigationTap?.call(0);
+              if (context.mounted) {
+                Navigator.pop(context);
+                onNavigationTap?.call(0);
+              }
             },
           ),
           _buildMenuItem(
@@ -269,8 +276,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.people,
             title: 'Members',
             onTap: () {
-              Navigator.pop(context);
-              onNavigationTap?.call(1);
+              if (context.mounted) {
+                Navigator.pop(context);
+                onNavigationTap?.call(1);
+              }
             },
           ),
           _buildMenuItem(
@@ -278,8 +287,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.account_balance,
             title: 'Loans',
             onTap: () {
-              Navigator.pop(context);
-              onNavigationTap?.call(2);
+              if (context.mounted) {
+                Navigator.pop(context);
+                onNavigationTap?.call(2);
+              }
             },
           ),
           _buildMenuItem(
@@ -287,8 +298,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.rotate_right,
             title: 'Allocations',
             onTap: () {
-              Navigator.pop(context);
-              onNavigationTap?.call(3);
+              if (context.mounted) {
+                Navigator.pop(context);
+                onNavigationTap?.call(3);
+              }
             },
           ),
           _buildMenuItem(
@@ -296,8 +309,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.analytics,
             title: 'Reports',
             onTap: () {
-              Navigator.pop(context);
-              onNavigationTap?.call(4);
+              if (context.mounted) {
+                Navigator.pop(context);
+                onNavigationTap?.call(4);
+              }
             },
           ),
           const Divider(),
@@ -306,8 +321,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.person,
             title: 'Profile',
             onTap: () {
-              Navigator.pop(context);
-              onProfileTap?.call();
+              if (context.mounted) {
+                Navigator.pop(context);
+                onProfileTap?.call();
+              }
             },
           ),
           _buildMenuItem(
@@ -315,8 +332,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.help_outline,
             title: 'Help & Support',
             onTap: () {
-              Navigator.pop(context);
-              _showHelpDialog(context);
+              if (context.mounted) {
+                Navigator.pop(context);
+                _showHelpDialog(context);
+              }
             },
           ),
         ],
@@ -329,8 +348,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.dashboard,
             title: 'Home',
             onTap: () {
-              Navigator.pop(context);
-              onNavigationTap?.call(0);
+              if (context.mounted) {
+                Navigator.pop(context);
+                onNavigationTap?.call(0);
+              }
             },
           ),
           _buildMenuItem(
@@ -338,8 +359,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.payments,
             title: 'Contributions',
             onTap: () {
-              Navigator.pop(context);
-              onNavigationTap?.call(1);
+              if (context.mounted) {
+                Navigator.pop(context);
+                onNavigationTap?.call(1);
+              }
             },
           ),
           _buildMenuItem(
@@ -347,8 +370,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.account_balance,
             title: 'Loans',
             onTap: () {
-              Navigator.pop(context);
-              onNavigationTap?.call(2);
+              if (context.mounted) {
+                Navigator.pop(context);
+                onNavigationTap?.call(2);
+              }
             },
           ),
           _buildMenuItem(
@@ -356,8 +381,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.rotate_right,
             title: 'Allocations',
             onTap: () {
-              Navigator.pop(context);
-              onNavigationTap?.call(3);
+              if (context.mounted) {
+                Navigator.pop(context);
+                onNavigationTap?.call(3);
+              }
             },
           ),
           _buildMenuItem(
@@ -365,8 +392,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.calendar_today,
             title: 'Meetings',
             onTap: () {
-              Navigator.pop(context);
-              onNavigationTap?.call(4);
+              if (context.mounted) {
+                Navigator.pop(context);
+                onNavigationTap?.call(4);
+              }
             },
           ),
           const Divider(),
@@ -375,8 +404,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.person,
             title: 'Profile',
             onTap: () {
-              Navigator.pop(context);
-              onProfileTap?.call();
+              if (context.mounted) {
+                Navigator.pop(context);
+                onProfileTap?.call();
+              }
             },
           ),
           _buildMenuItem(
@@ -384,8 +415,10 @@ class ModernNavigationDrawer extends StatelessWidget {
             icon: Icons.help_outline,
             title: 'Help & Support',
             onTap: () {
-              Navigator.pop(context);
-              _showHelpDialog(context);
+              if (context.mounted) {
+                Navigator.pop(context);
+                _showHelpDialog(context);
+              }
             },
           ),
         ],
@@ -459,6 +492,8 @@ class ModernNavigationDrawer extends StatelessWidget {
   }
 
   void _showHelpDialog(BuildContext context) {
+    if (!context.mounted) return;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -478,7 +513,11 @@ class ModernNavigationDrawer extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
+            },
             child: const Text('Close'),
           ),
         ],

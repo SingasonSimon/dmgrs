@@ -27,6 +27,17 @@ class AppConstants {
   static const String loanActive = 'active';
   static const String loanCompleted = 'completed';
 
+  // Penalty Status
+  static const String penaltyPending = 'pending';
+  static const String penaltyPaid = 'paid';
+  static const String penaltyWaived = 'waived';
+
+  // Meeting Status
+  static const String meetingScheduled = 'scheduled';
+  static const String meetingInProgress = 'in_progress';
+  static const String meetingCompleted = 'completed';
+  static const String meetingCancelled = 'cancelled';
+
   // Notification Types
   static const String notificationContribution = 'contribution';
   static const String notificationPenalty = 'penalty';
@@ -47,20 +58,30 @@ class AppConstants {
   static const String notificationsCollection = 'notifications';
   static const String transactionsCollection = 'transactions';
 
-  // M-Pesa Constants (Sandbox)
+  // M-Pesa Constants (Daraja 3.0)
   static const String mpesaSandboxUrl = 'https://sandbox.safaricom.co.ke';
   static const String mpesaProductionUrl = 'https://api.safaricom.co.ke';
-  static const String mpesaBusinessShortCode = '174379'; // Sandbox
-  static const String mpesaPasskey =
-      'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'; // Sandbox
 
-  // TODO: Replace with your actual credentials
-  static const String mpesaConsumerKey = 'your_consumer_key_here';
-  static const String mpesaConsumerSecret = 'your_consumer_secret_here';
+  // Sandbox credentials (for testing)
+  static const String mpesaSandboxBusinessShortCode = '174379';
+  static const String mpesaSandboxPasskey =
+      'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
+
+  // Production credentials (replace with your actual Daraja 3.0 credentials)
+  static const String mpesaBusinessShortCode =
+      '174379'; // Replace with your production short code
+  static const String mpesaPasskey =
+      'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'; // Replace with your production passkey
+  static const String mpesaConsumerKey = 'your_daraja_3_consumer_key_here';
+  static const String mpesaConsumerSecret =
+      'your_daraja_3_consumer_secret_here';
   static const String mpesaCallbackUrl =
       'https://your-domain.com/mpesa/callback';
 
-  // AWS S3
+  // Environment flag (set to false for production)
+  static const bool isMpesaSandbox = true;
+
+  // AWS S3 Configuration
   static const String s3BucketName = 'digital-merry-go-round-documents';
   static const String s3Region = 'us-east-1';
 

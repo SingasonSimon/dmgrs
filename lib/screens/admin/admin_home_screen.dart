@@ -15,6 +15,7 @@ import 'admin_loan_screen.dart';
 import 'admin_allocation_screen.dart';
 import 'admin_reports_screen.dart';
 import 'admin_add_user_screen.dart';
+import 'mpesa_test_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -44,39 +45,50 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   void _loadData() {
-    final contributionProvider = Provider.of<ContributionProvider>(
-      context,
-      listen: false,
-    );
-    final loanProvider = Provider.of<LoanProvider>(context, listen: false);
-    final notificationProvider = Provider.of<NotificationProvider>(
-      context,
-      listen: false,
-    );
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (!mounted) return;
 
-    contributionProvider.loadContributions();
-    contributionProvider.loadAllocations();
-    contributionProvider.loadCurrentCycle();
-    contributionProvider.loadLendingPoolBalance();
+    try {
+      final contributionProvider = Provider.of<ContributionProvider>(
+        context,
+        listen: false,
+      );
+      final loanProvider = Provider.of<LoanProvider>(context, listen: false);
+      final notificationProvider = Provider.of<NotificationProvider>(
+        context,
+        listen: false,
+      );
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    loanProvider.loadLoans();
-    loanProvider.loadLendingPoolBalance();
+      contributionProvider.loadContributions();
+      contributionProvider.loadAllocations();
+      contributionProvider.loadCurrentCycle();
+      contributionProvider.loadLendingPoolBalance();
 
-    if (authProvider.isAuthenticated) {
-      notificationProvider.loadUserNotifications(authProvider.userId);
+      loanProvider.loadLoans();
+      loanProvider.loadLendingPoolBalance();
+
+      if (authProvider.isAuthenticated) {
+        notificationProvider.loadUserNotifications(authProvider.userId);
+      }
+    } catch (e) {
+      print('Error loading data: $e');
     }
   }
 
   void _onTabTapped(int index) {
+    if (!mounted) return;
+
     setState(() {
       _currentIndex = index;
     });
-    _pageController.animateToPage(
-      index,
-      duration: AppConstants.mediumAnimation,
-      curve: Curves.easeInOut,
-    );
+
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        index,
+        duration: AppConstants.mediumAnimation,
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   void _showLogoutDialog() {
@@ -142,6 +154,18 @@ class _AdminDashboardTab extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.wifi_protected_setup),
+            tooltip: 'Test M-Pesa Connection',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MpesaTestScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
@@ -388,24 +412,15 @@ class _AdminDashboardTab extends StatelessWidget {
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: SimplePieChart(
-                    title: 'Loan Status',
-                    data: loanStatusData,
-                    size: 120,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: SimpleBarChart(
-                    title: 'Monthly Contributions',
-                    data: monthlyData,
-                  ),
-                ),
-              ],
+            // Loan Status Chart (Top)
+            SimplePieChart(
+              title: 'Loan Status Distribution',
+              data: loanStatusData,
+              size: 200,
             ),
+            const SizedBox(height: 24),
+            // Monthly Contributions Chart (Below)
+            SimpleBarChart(title: 'Monthly Contributions', data: monthlyData),
           ],
         );
       },

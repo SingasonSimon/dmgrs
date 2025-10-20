@@ -59,12 +59,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (success && mounted) {
       AppHelpers.showSuccessSnackBar(
         context,
-        'Account created successfully! Please check your email for verification.',
+        'Account created successfully! You are now logged in.',
       );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+      // Don't navigate - let AuthWrapper handle the navigation
+      // The user is now authenticated and AuthWrapper will redirect to dashboard
     } else if (mounted) {
       AppHelpers.showErrorSnackBar(
         context,
@@ -324,7 +322,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(
                       AppConstants.borderRadius,
                     ),

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import '../utils/constants.dart';
+import 'alternative_mpesa_service.dart';
 
 class MpesaService {
   // Generate access token for M-Pesa API
@@ -10,14 +11,17 @@ class MpesaService {
       final String consumerKey = AppConstants.mpesaConsumerKey;
       final String consumerSecret = AppConstants.mpesaConsumerSecret;
 
+      // Use appropriate URL based on environment
+      final String baseUrl = AppConstants.isMpesaSandbox
+          ? AppConstants.mpesaSandboxUrl
+          : AppConstants.mpesaProductionUrl;
+
       final String credentials = base64Encode(
         utf8.encode('$consumerKey:$consumerSecret'),
       );
 
       final response = await http.post(
-        Uri.parse(
-          '${AppConstants.mpesaSandboxUrl}/oauth/v1/generate?grant_type=client_credentials',
-        ),
+        Uri.parse('$baseUrl/oauth/v1/generate?grant_type=client_credentials'),
         headers: {
           'Authorization': 'Basic $credentials',
           'Content-Type': 'application/json',
@@ -55,7 +59,7 @@ class MpesaService {
     );
   }
 
-  // Initiate STK Push
+  // Initiate STK Push - Using Alternative Service
   static Future<Map<String, dynamic>?> initiateSTKPush({
     required String phoneNumber,
     required double amount,
@@ -63,59 +67,13 @@ class MpesaService {
     required String transactionDesc,
   }) async {
     try {
-      final accessToken = await getAccessToken();
-      if (accessToken == null) {
-        throw Exception('Failed to get access token');
-      }
-
-      final String timestamp = generateTimestamp();
-      final String password = generatePassword(
-        AppConstants.mpesaBusinessShortCode,
-        AppConstants.mpesaPasskey,
-        timestamp,
+      // Use alternative M-Pesa service for now
+      return await AlternativeMpesaService.initiateSTKPush(
+        phoneNumber: phoneNumber,
+        amount: amount,
+        accountReference: accountReference,
+        transactionDesc: transactionDesc,
       );
-
-      // Clean phone number
-      String cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
-      if (cleanPhone.startsWith('0')) {
-        cleanPhone = '254${cleanPhone.substring(1)}';
-      } else if (!cleanPhone.startsWith('254')) {
-        cleanPhone = '254$cleanPhone';
-      }
-
-      final Map<String, dynamic> requestBody = {
-        'BusinessShortCode': AppConstants.mpesaBusinessShortCode,
-        'Password': password,
-        'Timestamp': timestamp,
-        'TransactionType': 'CustomerPayBillOnline',
-        'Amount': amount.toInt(),
-        'PartyA': cleanPhone,
-        'PartyB': AppConstants.mpesaBusinessShortCode,
-        'PhoneNumber': cleanPhone,
-        'CallBackURL': AppConstants.mpesaCallbackUrl,
-        'AccountReference': accountReference,
-        'TransactionDesc': transactionDesc,
-      };
-
-      final response = await http.post(
-        Uri.parse(
-          '${AppConstants.mpesaSandboxUrl}/mpesa/stkpush/v1/processrequest',
-        ),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(requestBody),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data;
-      } else {
-        throw Exception(
-          'STK Push failed: ${response.statusCode} - ${response.body}',
-        );
-      }
     } catch (e) {
       throw Exception('Error initiating STK Push: $e');
     }
@@ -132,23 +90,35 @@ class MpesaService {
       }
 
       final String timestamp = generateTimestamp();
+
+      // Use appropriate credentials based on environment
+      final String businessShortCode = AppConstants.isMpesaSandbox
+          ? AppConstants.mpesaSandboxBusinessShortCode
+          : AppConstants.mpesaBusinessShortCode;
+      final String passkey = AppConstants.isMpesaSandbox
+          ? AppConstants.mpesaSandboxPasskey
+          : AppConstants.mpesaPasskey;
+
       final String password = generatePassword(
-        AppConstants.mpesaBusinessShortCode,
-        AppConstants.mpesaPasskey,
+        businessShortCode,
+        passkey,
         timestamp,
       );
 
       final Map<String, dynamic> requestBody = {
-        'BusinessShortCode': AppConstants.mpesaBusinessShortCode,
+        'BusinessShortCode': businessShortCode,
         'Password': password,
         'Timestamp': timestamp,
         'CheckoutRequestID': checkoutRequestId,
       };
 
+      // Use appropriate URL based on environment
+      final String baseUrl = AppConstants.isMpesaSandbox
+          ? AppConstants.mpesaSandboxUrl
+          : AppConstants.mpesaProductionUrl;
+
       final response = await http.post(
-        Uri.parse(
-          '${AppConstants.mpesaSandboxUrl}/mpesa/stkpushquery/v1/query',
-        ),
+        Uri.parse('$baseUrl/mpesa/stkpushquery/v1/query'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -297,9 +267,14 @@ class MpesaService {
   // Check if M-Pesa service is available
   static Future<bool> isServiceAvailable() async {
     try {
+      // Use appropriate URL based on environment
+      final String baseUrl = AppConstants.isMpesaSandbox
+          ? AppConstants.mpesaSandboxUrl
+          : AppConstants.mpesaProductionUrl;
+
       final response = await http
           .get(
-            Uri.parse('${AppConstants.mpesaSandboxUrl}/'),
+            Uri.parse('$baseUrl/'),
             headers: {'Content-Type': 'application/json'},
           )
           .timeout(const Duration(seconds: 10));
@@ -307,6 +282,42 @@ class MpesaService {
       return response.statusCode == 200;
     } catch (e) {
       return false;
+    }
+  }
+
+  // Test M-Pesa connection
+  static Future<Map<String, dynamic>> testConnection() async {
+    try {
+      print('Testing M-Pesa connection...');
+      print(
+        'Environment: ${AppConstants.isMpesaSandbox ? "Sandbox" : "Production"}',
+      );
+
+      final accessToken = await getAccessToken();
+      if (accessToken == null) {
+        return {
+          'success': false,
+          'message': 'Failed to get access token',
+          'environment': AppConstants.isMpesaSandbox ? 'Sandbox' : 'Production',
+        };
+      }
+
+      final serviceAvailable = await isServiceAvailable();
+
+      return {
+        'success': true,
+        'message': 'Connection successful',
+        'environment': AppConstants.isMpesaSandbox ? 'Sandbox' : 'Production',
+        'accessToken':
+            accessToken.substring(0, 20) + '...', // Show partial token
+        'serviceAvailable': serviceAvailable,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Connection failed: $e',
+        'environment': AppConstants.isMpesaSandbox ? 'Sandbox' : 'Production',
+      };
     }
   }
 

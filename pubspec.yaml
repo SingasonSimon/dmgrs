@@ -50,6 +50,9 @@ dependencies:
   http: ^1.2.2
   dio: ^5.7.0
 
+  # Image & File Handling
+  image_picker: ^1.1.2
+
   # AWS S3 (will implement custom service)
 
   # Local Storage
