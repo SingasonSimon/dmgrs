@@ -38,7 +38,7 @@ A Flutter mobile application for automating traditional Chama group savings and 
 
 ### 1. Clone and Install Dependencies
 ```bash
-git clone <repository-url>
+git clone <https://github.com/SingasonSimon/dmgrs.git>
 cd digital_merry_go_round
 flutter pub get
 ```

@@ -6,10 +6,8 @@ import '../../providers/loan_provider.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
 import '../../widgets/modern_bottom_nav.dart';
-import '../../widgets/modern_navigation_drawer.dart';
 import '../../widgets/modern_card.dart';
 import '../shared/notifications_screen.dart';
-import '../shared/welcome_screen.dart';
 import 'contribution_screen.dart';
 import 'loan_screen.dart';
 import 'profile_screen.dart';
@@ -69,32 +67,11 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
     );
   }
 
-  void _showLogoutDialog() {
-    AppHelpers.showConfirmationDialog(
-      context,
-      title: 'Logout',
-      message: 'Are you sure you want to logout?',
-    ).then((confirmed) async {
-      if (confirmed == true) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        await authProvider.signOut();
-        if (mounted) {
-          // Navigate back to welcome screen
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-            (route) => false,
-          );
-        }
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: _currentIndex == 0,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (!didPop && _currentIndex > 0) {
           _onTabTapped(0);
         }
