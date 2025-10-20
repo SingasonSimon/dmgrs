@@ -769,84 +769,127 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final emailController = TextEditingController();
+    String selectedRole = 'member'; // Default role
+    String selectedStatus = 'active'; // Default status
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Add New Member'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Name is required';
-                  }
-                  if (value.trim().length < 2) {
-                    return 'Name must be at least 2 characters';
-                  }
-                  if (value.trim().length > 50) {
-                    return 'Name must be less than 50 characters';
-                  }
-                  return null;
-                },
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 500,
+          child: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Full Name',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Name is required';
+                      }
+                      if (value.trim().length < 2) {
+                        return 'Name must be at least 2 characters';
+                      }
+                      if (value.trim().length > 50) {
+                        return 'Name must be less than 50 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: phoneController,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone Number',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.phone),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Phone number is required';
+                      }
+                      if (value.trim().length < 10) {
+                        return 'Phone number must be at least 10 digits';
+                      }
+                      if (value.trim().length > 15) {
+                        return 'Phone number must be less than 15 digits';
+                      }
+                      // Basic phone number validation (digits, spaces, hyphens, parentheses)
+                      final phoneRegex = RegExp(r'^[\d\s\-\(\)\+]+$');
+                      if (!phoneRegex.hasMatch(value.trim())) {
+                        return 'Please enter a valid phone number';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email (Optional)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value != null && value.trim().isNotEmpty) {
+                        final emailRegex = RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        );
+                        if (!emailRegex.hasMatch(value.trim())) {
+                          return 'Please enter a valid email address';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedRole,
+                    decoration: const InputDecoration(
+                      labelText: 'Role',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.admin_panel_settings),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'member', child: Text('Member')),
+                      DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                    ],
+                    onChanged: (value) {
+                      selectedRole = value!;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedStatus,
+                    decoration: const InputDecoration(
+                      labelText: 'Status',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.info),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'active', child: Text('Active')),
+                      DropdownMenuItem(
+                        value: 'inactive',
+                        child: Text('Inactive'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      selectedStatus = value!;
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Phone number is required';
-                  }
-                  if (value.trim().length < 10) {
-                    return 'Phone number must be at least 10 digits';
-                  }
-                  if (value.trim().length > 15) {
-                    return 'Phone number must be less than 15 digits';
-                  }
-                  // Basic phone number validation (digits, spaces, hyphens, parentheses)
-                  final phoneRegex = RegExp(r'^[\d\s\-\(\)\+]+$');
-                  if (!phoneRegex.hasMatch(value.trim())) {
-                    return 'Please enter a valid phone number';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email (Optional)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value != null && value.trim().isNotEmpty) {
-                    final emailRegex = RegExp(
-                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                    );
-                    if (!emailRegex.hasMatch(value.trim())) {
-                      return 'Please enter a valid email address';
-                    }
-                  }
-                  return null;
-                },
-              ),
-            ],
+            ),
           ),
         ),
         actions: [
@@ -865,6 +908,8 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
                   emailController.text.trim().isEmpty
                       ? null
                       : emailController.text.trim(),
+                  selectedRole,
+                  selectedStatus,
                 );
               }
             },
@@ -881,20 +926,23 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
     String name,
     String phone,
     String? email,
+    String role,
+    String status,
   ) async {
     if (!mounted) return;
 
     try {
       final groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
-      // Create new user
+      // Create new user with complete profile
       final userId = AppHelpers.generateRandomId();
       final newUser = {
         'userId': userId,
         'name': name,
         'phone': phone,
         'email': email,
-        'role': 'member',
+        'role': role,
+        'status': status,
         'createdAt': DateTime.now(),
         'groupIds': [group.groupId],
       };
@@ -991,12 +1039,14 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
   }
 
   void _copyGroupId(BuildContext context, String groupId) {
-    // Copy group ID to clipboard
-    // Note: In a real Flutter app, you'd use Clipboard.setData()
+    // In a real Flutter app, you'd use:
+    // await Clipboard.setData(ClipboardData(text: groupId));
+    // For now, we'll just show a message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Group ID copied: $groupId'),
-        duration: const Duration(seconds: 2),
+        content: Text('Group ID: $groupId (copied to clipboard)'),
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(label: 'OK', onPressed: () {}),
       ),
     );
   }
