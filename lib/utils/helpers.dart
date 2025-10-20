@@ -4,8 +4,27 @@ import 'package:url_launcher/url_launcher.dart' as url_launcher;
 import 'constants.dart';
 
 class AppHelpers {
-  // Format currency (Kenyan Shillings)
+  // Format currency (Kenyan Shillings) with smart formatting for large numbers
   static String formatCurrency(double amount) {
+    // For amounts over 1000, use K/M/B suffixes for better readability
+    if (amount >= 1000000000) {
+      return 'KSh ${(amount / 1000000000).toStringAsFixed(1)}B';
+    } else if (amount >= 1000000) {
+      return 'KSh ${(amount / 1000000).toStringAsFixed(1)}M';
+    } else if (amount >= 1000) {
+      return 'KSh ${(amount / 1000).toStringAsFixed(1)}K';
+    } else {
+      final formatter = NumberFormat.currency(
+        locale: 'en_KE',
+        symbol: 'KSh ',
+        decimalDigits: 0,
+      );
+      return formatter.format(amount);
+    }
+  }
+
+  // Format currency for display (alternative compact format)
+  static String formatCurrencyCompact(double amount) {
     final formatter = NumberFormat.currency(
       locale: 'en_KE',
       symbol: 'KSh ',

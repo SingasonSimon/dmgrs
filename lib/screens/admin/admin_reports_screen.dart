@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/contribution_provider.dart';
 import '../../providers/loan_provider.dart';
+import '../../providers/group_provider.dart';
 import '../../widgets/simple_chart.dart';
 import '../../widgets/modern_card.dart';
 import '../../utils/helpers.dart';
@@ -453,8 +454,8 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
   }
 
   Widget _buildContributionsTab() {
-    return Consumer<ContributionProvider>(
-      builder: (context, contributionProvider, child) {
+    return Consumer2<ContributionProvider, GroupProvider>(
+      builder: (context, contributionProvider, groupProvider, child) {
         return RefreshIndicator(
           onRefresh: () async => _loadData(),
           child: SingleChildScrollView(
@@ -462,7 +463,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildContributionsSummary(contributionProvider),
+                _buildContributionsSummary(contributionProvider, groupProvider),
                 const SizedBox(height: 24),
                 _buildContributionsChart(contributionProvider),
                 const SizedBox(height: 24),
@@ -475,7 +476,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
     );
   }
 
-  Widget _buildContributionsSummary(ContributionProvider contributionProvider) {
+  Widget _buildContributionsSummary(
+    ContributionProvider contributionProvider,
+    GroupProvider groupProvider,
+  ) {
     final totalContributions = contributionProvider.contributions.fold(
       0.0,
       (sum, contribution) => sum + contribution.amount,
@@ -498,25 +502,29 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
+          const SizedBox(height: 20),
+          // Vertical layout for better readability and overflow handling
+          _buildSummaryItemVertical(
+            'Total Contributions',
+            AppHelpers.formatCurrency(totalContributions),
+            Icons.payments,
+            Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSummaryItem(
-                  'Total Contributions',
-                  AppHelpers.formatCurrency(totalContributions),
-                  Icons.payments,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildSummaryItem(
-                  'This Month',
-                  AppHelpers.formatCurrency(monthlyContributions),
-                  Icons.calendar_month,
-                ),
-              ),
-            ],
+          _buildSummaryItemVertical(
+            'This Month',
+            AppHelpers.formatCurrency(monthlyContributions),
+            Icons.calendar_month,
+            Theme.of(context).colorScheme.secondary,
+          ),
+          const SizedBox(height: 16),
+          _buildSummaryItemVertical(
+            'Average per Member',
+            AppHelpers.formatCurrency(
+              _calculateAveragePerMember(totalContributions, groupProvider),
+            ),
+            Icons.person,
+            Theme.of(context).colorScheme.tertiary,
           ),
         ],
       ),
@@ -545,6 +553,62 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
           textAlign: TextAlign.center,
         ),
       ],
+    );
+  }
+
+  double _calculateAveragePerMember(
+    double totalContributions,
+    GroupProvider groupProvider,
+  ) {
+    if (groupProvider.groups.isEmpty) return 0.0;
+
+    int totalMembers = 0;
+    for (final group in groupProvider.groups) {
+      totalMembers += group.memberCount;
+    }
+
+    return totalMembers > 0 ? totalContributions / totalMembers : 0.0;
+  }
+
+  Widget _buildSummaryItemVertical(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: color),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
