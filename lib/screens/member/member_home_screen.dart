@@ -15,6 +15,7 @@ import 'loan_screen.dart';
 import 'profile_screen.dart';
 import 'fund_allocation_screen.dart';
 import 'meetings_screen.dart';
+import 'loan_repayment_screen.dart';
 
 class MemberHomeScreen extends StatefulWidget {
   const MemberHomeScreen({super.key});
