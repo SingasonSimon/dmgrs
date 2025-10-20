@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../utils/constants.dart';
@@ -122,6 +123,34 @@ class AuthProvider with ChangeNotifier {
       print('AuthProvider: Sign in error: $e');
       _setError(e.toString());
       return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Create user with email and password
+  Future<UserCredential?> createUserWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      print('AuthProvider: Creating user with email: $email');
+      final userCredential = await AuthService.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      print(
+        'AuthProvider: User created successfully: ${userCredential?.user?.uid}',
+      );
+      return userCredential;
+    } catch (e) {
+      print('AuthProvider: Create user error: $e');
+      _setError(e.toString());
+      return null;
     } finally {
       _setLoading(false);
     }

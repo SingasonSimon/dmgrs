@@ -4,6 +4,7 @@ import '../../providers/loan_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
+import '../member/loan_repayment_screen.dart';
 
 class AdminLoanScreen extends StatefulWidget {
   const AdminLoanScreen({super.key});
@@ -176,38 +177,59 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
   Widget _buildPendingLoanCard(BuildContext context, loan) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  AppHelpers.formatCurrency(loan.requestedAmount),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Chip(
-                  label: const Text(
-                    'PENDING',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+      child: InkWell(
+        onTap: () => _navigateToLoanDetails(loan),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppHelpers.formatCurrency(loan.requestedAmount),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  backgroundColor: Colors.orange.withOpacity(0.1),
-                  labelStyle: const TextStyle(color: Colors.orange),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(loan.purpose, style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(height: 8),
-            FutureBuilder(
-              future: _getUserInfo(loan.userId),
-              builder: (context, snapshot) {
-                if (snapshot.hasData && snapshot.data != null) {
-                  final user = snapshot.data!;
+                  Chip(
+                    label: const Text(
+                      'PENDING',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    backgroundColor: Colors.orange.withOpacity(0.1),
+                    labelStyle: const TextStyle(color: Colors.orange),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(loan.purpose, style: Theme.of(context).textTheme.bodyLarge),
+              const SizedBox(height: 8),
+              FutureBuilder(
+                future: _getUserInfo(loan.userId),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData && snapshot.data != null) {
+                    final user = snapshot.data!;
+                    return Row(
+                      children: [
+                        Icon(
+                          Icons.person,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${user['name']} (${user['phone']})',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    );
+                  }
                   return Row(
                     children: [
                       Icon(
@@ -217,65 +239,51 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${user['name']} (${user['phone']})',
+                        'Loading user info...',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
                   );
-                }
-                return Row(
-                  children: [
-                    Icon(
-                      Icons.person,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Loading user info...',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Requested: ${AppHelpers.formatDate(loan.requestDate)}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _rejectLoan(loan),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                    ),
-                    child: const Text('Reject'),
+                },
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _approveLoan(loan),
-                    child: const Text('Approve'),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Requested: ${AppHelpers.formatDate(loan.requestDate)}',
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => _rejectLoan(loan),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                      child: const Text('Reject'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _approveLoan(loan),
+                      child: const Text('Approve'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -284,96 +292,100 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
   Widget _buildActiveLoanCard(BuildContext context, loan) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  AppHelpers.formatCurrency(loan.finalAmount),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Chip(
-                  label: Text(
-                    AppHelpers.getLoanStatusDisplayText(loan.status),
-                    style: const TextStyle(
-                      fontSize: 12,
+      child: InkWell(
+        onTap: () => _navigateToLoanDetails(loan),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppHelpers.formatCurrency(loan.finalAmount),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  backgroundColor: AppHelpers.getLoanStatusColor(
-                    loan.status,
-                  ).withOpacity(0.1),
-                  labelStyle: TextStyle(
-                    color: AppHelpers.getLoanStatusColor(loan.status),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(loan.purpose, style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Remaining Balance:',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                Text(
-                  AppHelpers.formatCurrency(loan.remainingBalance),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Interest Rate:',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                Text(
-                  '${loan.interestRate}%',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            if (loan.nextPaymentDue != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.schedule, size: 16, color: Colors.orange),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Next Payment: ${AppHelpers.formatCurrency(loan.nextPaymentDue!.amount)} due ${AppHelpers.formatDate(loan.nextPaymentDue!.dueDate)}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.w500,
+                  Chip(
+                    label: Text(
+                      AppHelpers.getLoanStatusDisplayText(loan.status),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
-                ),
+                    backgroundColor: AppHelpers.getLoanStatusColor(
+                      loan.status,
+                    ).withOpacity(0.1),
+                    labelStyle: TextStyle(
+                      color: AppHelpers.getLoanStatusColor(loan.status),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 8),
+              Text(loan.purpose, style: Theme.of(context).textTheme.bodyLarge),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Remaining Balance:',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  Text(
+                    AppHelpers.formatCurrency(loan.remainingBalance),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Interest Rate:',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  Text(
+                    '${loan.interestRate}%',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              if (loan.nextPaymentDue != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.schedule, size: 16, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Next Payment: ${AppHelpers.formatCurrency(loan.nextPaymentDue!.amount)} due ${AppHelpers.formatDate(loan.nextPaymentDue!.dueDate)}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -382,48 +394,55 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
   Widget _buildCompletedLoanCard(BuildContext context, loan) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  AppHelpers.formatCurrency(loan.finalAmount),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Chip(
-                  label: const Text(
-                    'COMPLETED',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+      child: InkWell(
+        onTap: () => _navigateToLoanDetails(loan),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppHelpers.formatCurrency(loan.finalAmount),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  backgroundColor: Colors.blue.withOpacity(0.1),
-                  labelStyle: const TextStyle(color: Colors.blue),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(loan.purpose, style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Completed: ${AppHelpers.formatDate(loan.completionDate!)}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
-          ],
+                  Chip(
+                    label: const Text(
+                      'COMPLETED',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    backgroundColor: Colors.blue.withOpacity(0.1),
+                    labelStyle: const TextStyle(color: Colors.blue),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(loan.purpose, style: Theme.of(context).textTheme.bodyLarge),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Completed: ${AppHelpers.formatDate(loan.completionDate!)}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -432,57 +451,64 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
   Widget _buildRejectedLoanCard(BuildContext context, loan) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  AppHelpers.formatCurrency(loan.requestedAmount),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Chip(
-                  label: const Text(
-                    'REJECTED',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+      child: InkWell(
+        onTap: () => _navigateToLoanDetails(loan),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppHelpers.formatCurrency(loan.requestedAmount),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  backgroundColor: Colors.red.withOpacity(0.1),
-                  labelStyle: const TextStyle(color: Colors.red),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(loan.purpose, style: Theme.of(context).textTheme.bodyLarge),
-            if (loan.rejectionReason != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.cancel, size: 16, color: Colors.red),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Reason: ${loan.rejectionReason}',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(color: Colors.red),
+                  Chip(
+                    label: const Text(
+                      'REJECTED',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
-                ),
+                    backgroundColor: Colors.red.withOpacity(0.1),
+                    labelStyle: const TextStyle(color: Colors.red),
+                  ),
+                ],
               ),
+              const SizedBox(height: 8),
+              Text(loan.purpose, style: Theme.of(context).textTheme.bodyLarge),
+              if (loan.rejectionReason != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.cancel, size: 16, color: Colors.red),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Reason: ${loan.rejectionReason}',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -562,6 +588,13 @@ class _AdminLoanScreenState extends State<AdminLoanScreen>
     } catch (e) {
       return {'name': 'Unknown', 'phone': 'N/A'};
     }
+  }
+
+  void _navigateToLoanDetails(loan) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => LoanRepaymentScreen(loan: loan)),
+    );
   }
 }
 

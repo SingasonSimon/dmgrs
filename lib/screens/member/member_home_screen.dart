@@ -88,7 +88,11 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
         return true; // Allow back button to close app only from dashboard
       },
       child: Scaffold(
-        drawer: ModernNavigationDrawer(onLogoutTap: _showLogoutDialog),
+        drawer: ModernNavigationDrawer(
+          onLogoutTap: _showLogoutDialog,
+          onNavigationTap: _onTabTapped,
+          isAdmin: false,
+        ),
         body: Column(
           children: [
             // Custom header with menu and notifications

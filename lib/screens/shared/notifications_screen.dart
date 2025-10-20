@@ -48,58 +48,52 @@ class NotificationsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         children: [
-          // Notification System Explanation
+          // Quick Info Card
           ModernCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.notifications_active,
                       color: Theme.of(context).colorScheme.primary,
+                      size: 24,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Notification System',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Stay Updated',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Get real-time notifications for payments, loans, and important updates',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'The bell icon (🔔) in the app bar provides real-time notifications for important events:',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 12),
-                _buildNotificationType(
-                  context,
-                  '📱 M-Pesa Payments',
-                  'STK Push confirmations, payment completions, and failed transactions',
-                ),
-                _buildNotificationType(
-                  context,
-                  '💰 Loan Updates',
-                  'Loan approvals, rejections, payment reminders, and overdue notices',
-                ),
-                _buildNotificationType(
-                  context,
-                  '🎯 Fund Allocations',
-                  'When you receive your monthly allocation from the group',
-                ),
-                _buildNotificationType(
-                  context,
-                  '📅 Meeting Reminders',
-                  'Upcoming group meetings and important announcements',
-                ),
-                _buildNotificationType(
-                  context,
-                  '⚠️ System Alerts',
-                  'Account updates, security notifications, and system maintenance',
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -206,50 +200,6 @@ class NotificationsScreen extends StatelessWidget {
                 ],
               );
             },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNotificationType(
-    BuildContext context,
-    String title,
-    String description,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(width: 8),
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

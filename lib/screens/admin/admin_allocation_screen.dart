@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/contribution_provider.dart';
+import '../../services/firestore_service.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
 import '../../widgets/modern_card.dart';
@@ -254,17 +255,45 @@ class _AdminAllocationScreenState extends State<AdminAllocationScreen>
                             : Colors.grey,
                       ),
                     ),
-                    title: Text(
-                      'Member ${index + 1}',
-                      style: TextStyle(
-                        fontWeight: isCurrent
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
+                    title: FutureBuilder<Map<String, dynamic>?>(
+                      future: _getUserInfo(memberId),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data != null) {
+                          final user = snapshot.data!;
+                          return Text(
+                            user['name'] ?? 'Unknown User',
+                            style: TextStyle(
+                              fontWeight: isCurrent
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          );
+                        }
+                        return Text(
+                          'Loading...',
+                          style: TextStyle(
+                            fontWeight: isCurrent
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        );
+                      },
                     ),
-                    subtitle: Text(
-                      'ID: ${memberId.substring(0, 8)}...',
-                      style: Theme.of(context).textTheme.bodySmall,
+                    subtitle: FutureBuilder<Map<String, dynamic>?>(
+                      future: _getUserInfo(memberId),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data != null) {
+                          final user = snapshot.data!;
+                          return Text(
+                            user['phone'] ?? 'No phone',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          );
+                        }
+                        return Text(
+                          'Loading...',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        );
+                      },
                     ),
                     trailing: Container(
                       padding: const EdgeInsets.symmetric(
@@ -411,84 +440,125 @@ class _AdminAllocationScreenState extends State<AdminAllocationScreen>
   ) {
     return ModernCard(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  AppHelpers.formatCurrency(allocation.amount),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: allocation.disbursed
-                        ? Colors.green.withOpacity(0.1)
-                        : Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    allocation.disbursed ? 'Disbursed' : 'Pending',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: allocation.disbursed
-                          ? Colors.green
-                          : Colors.orange,
+      child: InkWell(
+        onTap: () => _showAllocationDetails(context, allocation),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppHelpers.formatCurrency(allocation.amount),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: allocation.disbursed
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      allocation.disbursed ? 'Disbursed' : 'Pending',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: allocation.disbursed
+                            ? Colors.green
+                            : Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Allocation ID: ${allocation.allocationId.substring(0, 8)}...',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 4),
+              FutureBuilder<Map<String, dynamic>?>(
+                future: _getUserInfo(allocation.userId),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData && snapshot.data != null) {
+                    final user = snapshot.data!;
+                    return Row(
+                      children: [
+                        Icon(
+                          Icons.person,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${user['name']} (${user['phone']})',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Icon(
+                        Icons.person,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Loading user info...',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Date: ${AppHelpers.formatDate(allocation.date)}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (!allocation.disbursed) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _disburseAllocation(
+                      context,
+                      allocation,
+                      contributionProvider,
+                    ),
+                    icon: const Icon(Icons.payment),
+                    label: const Text('Disburse Allocation'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
                     ),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Allocation ID: ${allocation.allocationId.substring(0, 8)}...',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Member ID: ${allocation.userId.substring(0, 8)}...',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Date: ${AppHelpers.formatDate(allocation.date)}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (!allocation.disbursed) ...[
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _disburseAllocation(
-                    context,
-                    allocation,
-                    contributionProvider,
-                  ),
-                  icon: const Icon(Icons.payment),
-                  label: const Text('Disburse Allocation'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -582,5 +652,99 @@ class _AdminAllocationScreenState extends State<AdminAllocationScreen>
         }
       }
     });
+  }
+
+  Future<Map<String, dynamic>?> _getUserInfo(String userId) async {
+    try {
+      final user = await FirestoreService.getUser(userId);
+      if (user != null) {
+        return {'name': user.name, 'phone': user.phone};
+      }
+      return null;
+    } catch (e) {
+      print('Error getting user info: $e');
+      return null;
+    }
+  }
+
+  void _showAllocationDetails(BuildContext context, allocation) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Allocation Details'),
+        content: FutureBuilder<Map<String, dynamic>?>(
+          future: _getUserInfo(allocation.userId),
+          builder: (context, snapshot) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDetailRow(
+                  'Amount',
+                  AppHelpers.formatCurrency(allocation.amount),
+                ),
+                _buildDetailRow('Allocation ID', allocation.allocationId),
+                if (snapshot.hasData && snapshot.data != null) ...[
+                  _buildDetailRow(
+                    'Member Name',
+                    snapshot.data!['name'] ?? 'Unknown',
+                  ),
+                  _buildDetailRow(
+                    'Phone Number',
+                    snapshot.data!['phone'] ?? 'No phone',
+                  ),
+                ] else ...[
+                  _buildDetailRow('Member', 'Loading...'),
+                ],
+                _buildDetailRow('Date', AppHelpers.formatDate(allocation.date)),
+                _buildDetailRow(
+                  'Status',
+                  allocation.disbursed ? 'Disbursed' : 'Pending',
+                ),
+                if (allocation.disbursed) ...[
+                  if (allocation.disbursementDate != null)
+                    _buildDetailRow(
+                      'Disbursement Date',
+                      AppHelpers.formatDate(allocation.disbursementDate!),
+                    ),
+                  if (allocation.disbursementMethod != null)
+                    _buildDetailRow(
+                      'Disbursement Method',
+                      allocation.disbursementMethod!,
+                    ),
+                  if (allocation.mpesaRef != null)
+                    _buildDetailRow('M-Pesa Reference', allocation.mpesaRef!),
+                ],
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
   }
 }

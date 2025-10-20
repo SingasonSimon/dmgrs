@@ -102,6 +102,29 @@ class AuthService {
     }
   }
 
+  // Create user with email and password (for admin use)
+  static Future<UserCredential?> createUserWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      print('AuthService: Creating user with email: $email');
+      final UserCredential result = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      print('AuthService: User created successfully: ${result.user?.uid}');
+      return result;
+    } on FirebaseAuthException catch (e) {
+      print('AuthService: Firebase auth exception: ${e.code} - ${e.message}');
+      throw _handleAuthException(e);
+    } catch (e) {
+      print('AuthService: General exception: $e');
+      throw Exception('User creation failed: $e');
+    }
+  }
+
   // Sign out
   static Future<void> signOut() async {
     try {

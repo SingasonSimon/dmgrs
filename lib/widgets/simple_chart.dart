@@ -33,26 +33,27 @@ class SimpleBarChart extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 220,
+            height: 280,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: data.map((item) {
-                final height = (item.value / max) * 160;
+                final height = (item.value / max) * 200;
                 return Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 2,
+                          horizontal: 2,
+                          vertical: 1,
                         ),
                         decoration: BoxDecoration(
                           color: Theme.of(
@@ -65,14 +66,15 @@ class SimpleBarChart extends StatelessWidget {
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 10,
+                                fontSize: 8,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 800),
-                        width: 24,
+                        width: 16,
                         height: height,
                         decoration: BoxDecoration(
                           color:
@@ -80,12 +82,13 @@ class SimpleBarChart extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
                         item.label,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 11,
+                          fontSize: 9,
                           fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         textAlign: TextAlign.center,
                         maxLines: 1,
@@ -151,9 +154,10 @@ class SimplePieChart extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -188,7 +192,12 @@ class SimplePieChart extends StatelessWidget {
                           Expanded(
                             child: Text(
                               item.label,
-                              style: Theme.of(context).textTheme.bodySmall,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                             ),
                           ),
                           Text(
@@ -197,6 +206,9 @@ class SimplePieChart extends StatelessWidget {
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 11,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                           ),
                         ],

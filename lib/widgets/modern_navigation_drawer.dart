@@ -9,12 +9,16 @@ class ModernNavigationDrawer extends StatelessWidget {
   final VoidCallback? onProfileTap;
   final VoidCallback? onSettingsTap;
   final VoidCallback? onLogoutTap;
+  final Function(int)? onNavigationTap;
+  final bool isAdmin;
 
   const ModernNavigationDrawer({
     super.key,
     this.onProfileTap,
     this.onSettingsTap,
     this.onLogoutTap,
+    this.onNavigationTap,
+    this.isAdmin = false,
   });
 
   @override
@@ -248,34 +252,145 @@ class ModernNavigationDrawer extends StatelessWidget {
   }
 
   Widget _buildMenuItems(BuildContext context) {
-    return Column(
-      children: [
-        _buildMenuItem(
-          context,
-          icon: Icons.dashboard,
-          title: 'Dashboard',
-          onTap: () => Navigator.pop(context),
-        ),
-        _buildMenuItem(
-          context,
-          icon: Icons.settings,
-          title: 'Settings',
-          onTap: onSettingsTap ?? () => Navigator.pop(context),
-        ),
-        _buildMenuItem(
-          context,
-          icon: Icons.help_outline,
-          title: 'Help & Support',
-          onTap: () => Navigator.pop(context),
-        ),
-        _buildMenuItem(
-          context,
-          icon: Icons.info_outline,
-          title: 'About',
-          onTap: () => Navigator.pop(context),
-        ),
-      ],
-    );
+    if (isAdmin) {
+      return Column(
+        children: [
+          _buildMenuItem(
+            context,
+            icon: Icons.dashboard,
+            title: 'Dashboard',
+            onTap: () {
+              Navigator.pop(context);
+              onNavigationTap?.call(0);
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.people,
+            title: 'Members',
+            onTap: () {
+              Navigator.pop(context);
+              onNavigationTap?.call(1);
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.account_balance,
+            title: 'Loans',
+            onTap: () {
+              Navigator.pop(context);
+              onNavigationTap?.call(2);
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.rotate_right,
+            title: 'Allocations',
+            onTap: () {
+              Navigator.pop(context);
+              onNavigationTap?.call(3);
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.analytics,
+            title: 'Reports',
+            onTap: () {
+              Navigator.pop(context);
+              onNavigationTap?.call(4);
+            },
+          ),
+          const Divider(),
+          _buildMenuItem(
+            context,
+            icon: Icons.person,
+            title: 'Profile',
+            onTap: () {
+              Navigator.pop(context);
+              onProfileTap?.call();
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.help_outline,
+            title: 'Help & Support',
+            onTap: () {
+              Navigator.pop(context);
+              _showHelpDialog(context);
+            },
+          ),
+        ],
+      );
+    } else {
+      return Column(
+        children: [
+          _buildMenuItem(
+            context,
+            icon: Icons.dashboard,
+            title: 'Home',
+            onTap: () {
+              Navigator.pop(context);
+              onNavigationTap?.call(0);
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.payments,
+            title: 'Contributions',
+            onTap: () {
+              Navigator.pop(context);
+              onNavigationTap?.call(1);
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.account_balance,
+            title: 'Loans',
+            onTap: () {
+              Navigator.pop(context);
+              onNavigationTap?.call(2);
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.rotate_right,
+            title: 'Allocations',
+            onTap: () {
+              Navigator.pop(context);
+              onNavigationTap?.call(3);
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.calendar_today,
+            title: 'Meetings',
+            onTap: () {
+              Navigator.pop(context);
+              onNavigationTap?.call(4);
+            },
+          ),
+          const Divider(),
+          _buildMenuItem(
+            context,
+            icon: Icons.person,
+            title: 'Profile',
+            onTap: () {
+              Navigator.pop(context);
+              onProfileTap?.call();
+            },
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.help_outline,
+            title: 'Help & Support',
+            onTap: () {
+              Navigator.pop(context);
+              _showHelpDialog(context);
+            },
+          ),
+        ],
+      );
+    }
   }
 
   Widget _buildMenuItem(
@@ -341,5 +456,33 @@ class ModernNavigationDrawer extends StatelessWidget {
       case AppThemeMode.purple:
         return const Color(0xFF7B1FA2);
     }
+  }
+
+  void _showHelpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Help & Support'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Need help? Here are some resources:'),
+            SizedBox(height: 16),
+            Text('• Check the FAQ section in your profile'),
+            Text('• Contact support through the app'),
+            Text('• Review the user guide'),
+            SizedBox(height: 16),
+            Text('For technical issues, please contact the administrator.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 }

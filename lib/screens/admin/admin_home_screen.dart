@@ -13,6 +13,8 @@ import '../../widgets/simple_chart.dart';
 import '../shared/notifications_screen.dart';
 import 'admin_loan_screen.dart';
 import 'admin_allocation_screen.dart';
+import 'admin_reports_screen.dart';
+import 'admin_add_user_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -102,7 +104,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
         ),
       ),
-      drawer: ModernNavigationDrawer(onLogoutTap: _showLogoutDialog),
+      drawer: ModernNavigationDrawer(
+        onLogoutTap: _showLogoutDialog,
+        onNavigationTap: _onTabTapped,
+        isAdmin: true,
+      ),
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
@@ -115,7 +121,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           _MembersTab(),
           _LoansTab(),
           _AllocationsTab(),
-          _ReportsTab(),
+          AdminReportsScreen(),
         ],
       ),
       bottomNavigationBar: ModernBottomNav(
@@ -747,10 +753,11 @@ class _MembersTab extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              // TODO: Add new member
-              AppHelpers.showSnackBar(
+              Navigator.push(
                 context,
-                'Add member functionality coming soon!',
+                MaterialPageRoute(
+                  builder: (context) => const AdminAddUserScreen(),
+                ),
               );
             },
           ),
@@ -776,17 +783,5 @@ class _AllocationsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const AdminAllocationScreen();
-  }
-}
-
-class _ReportsTab extends StatelessWidget {
-  const _ReportsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Reports')),
-      body: const Center(child: Text('Reports coming soon!')),
-    );
   }
 }
