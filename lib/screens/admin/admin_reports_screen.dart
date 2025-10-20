@@ -122,10 +122,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
       (sum, contribution) => sum + contribution.amount,
     );
 
-    final totalLoans = loanProvider.loans.fold(
-      0.0,
-      (sum, loan) => sum + loan.finalAmount,
-    );
+    // Removed unused totalLoans to satisfy linter
 
     final activeLoans = loanProvider.loans
         .where((loan) => loan.status == AppConstants.loanActive)
@@ -871,15 +868,20 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
 
     // Count only active and completed loans
     final totalLoans = loanProvider.loans
-        .where((loan) => 
-            loan.status == AppConstants.loanActive || 
-            loan.status == AppConstants.loanCompleted)
+        .where(
+          (loan) =>
+              loan.status == AppConstants.loanActive ||
+              loan.status == AppConstants.loanCompleted,
+        )
         .fold(0.0, (sum, loan) => sum + loan.finalAmount);
 
     // Calculate interest from completed loans only
     final totalInterest = loanProvider.loans
         .where((loan) => loan.status == AppConstants.loanCompleted)
-        .fold(0.0, (sum, loan) => sum + (loan.finalAmount - loan.requestedAmount));
+        .fold(
+          0.0,
+          (sum, loan) => sum + (loan.finalAmount - loan.requestedAmount),
+        );
 
     // Calculate outstanding loan amounts (active loans)
     final outstandingLoans = loanProvider.loans
@@ -983,21 +985,30 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
     // Calculate total interest earned from completed loans
     final totalInterest = loanProvider.loans
         .where((loan) => loan.status == AppConstants.loanCompleted)
-        .fold(0.0, (sum, loan) => sum + (loan.finalAmount - loan.requestedAmount));
+        .fold(
+          0.0,
+          (sum, loan) => sum + (loan.finalAmount - loan.requestedAmount),
+        );
 
     // Calculate return on investment (ROI)
-    final roi = totalContributions > 0 ? (totalInterest / totalContributions) * 100 : 0.0;
-    
+    final roi = totalContributions > 0
+        ? (totalInterest / totalContributions) * 100
+        : 0.0;
+
     // Calculate average interest rate per loan
-    final completedLoans = loanProvider.loans
-        .where((loan) => loan.status == AppConstants.loanCompleted);
+    final completedLoans = loanProvider.loans.where(
+      (loan) => loan.status == AppConstants.loanCompleted,
+    );
     final averageInterestRate = completedLoans.isNotEmpty
         ? completedLoans.fold(0.0, (sum, loan) {
-            final interestRate = loan.requestedAmount > 0 
-                ? ((loan.finalAmount - loan.requestedAmount) / loan.requestedAmount) * 100
-                : 0.0;
-            return sum + interestRate;
-          }) / completedLoans.length
+                final interestRate = loan.requestedAmount > 0
+                    ? ((loan.finalAmount - loan.requestedAmount) /
+                              loan.requestedAmount) *
+                          100
+                    : 0.0;
+                return sum + interestRate;
+              }) /
+              completedLoans.length
         : 0.0;
 
     return ModernCard(
@@ -1065,34 +1076,41 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
     LoanProvider loanProvider,
   ) {
     final now = DateTime.now();
-    
+
     // Calculate average monthly contributions from last 3 months
-    final last3Months = List.generate(3, (i) => 
-        DateTime(now.year, now.month - i, 1));
-    
+    final last3Months = List.generate(
+      3,
+      (i) => DateTime(now.year, now.month - i, 1),
+    );
+
     double totalContributions3Months = 0;
     int monthsWithData = 0;
-    
+
     for (final month in last3Months) {
       final monthContributions = contributionProvider.contributions
-          .where((c) => c.status == AppConstants.paymentCompleted &&
-              c.date.year == month.year && c.date.month == month.month)
+          .where(
+            (c) =>
+                c.status == AppConstants.paymentCompleted &&
+                c.date.year == month.year &&
+                c.date.month == month.month,
+          )
           .fold(0.0, (sum, contribution) => sum + contribution.amount);
-      
+
       if (monthContributions > 0) {
         totalContributions3Months += monthContributions;
         monthsWithData++;
       }
     }
-    
-    final averageMonthlyIncome = monthsWithData > 0 
-        ? totalContributions3Months / monthsWithData 
+
+    final averageMonthlyIncome = monthsWithData > 0
+        ? totalContributions3Months / monthsWithData
         : 0.0;
-    
+
     // Calculate expected monthly loan repayments
-    final activeLoans = loanProvider.loans
-        .where((loan) => loan.status == AppConstants.loanActive);
-    
+    final activeLoans = loanProvider.loans.where(
+      (loan) => loan.status == AppConstants.loanActive,
+    );
+
     double monthlyLoanRepayments = 0;
     for (final loan in activeLoans) {
       if (loan.repaymentSchedule.isNotEmpty) {
@@ -1102,10 +1120,11 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
         monthlyLoanRepayments += monthlyPayment;
       }
     }
-    
+
     final projectedMonthlyIncome = averageMonthlyIncome;
     final projectedMonthlyOutflow = monthlyLoanRepayments;
-    final projectedNetCashFlow = projectedMonthlyIncome - projectedMonthlyOutflow;
+    final projectedNetCashFlow =
+        projectedMonthlyIncome - projectedMonthlyOutflow;
     final projectedYearlyIncome = projectedMonthlyIncome * 12;
 
     return ModernCard(
@@ -1373,4 +1392,3 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
     }
   }
 }
-

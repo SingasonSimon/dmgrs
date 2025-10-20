@@ -92,7 +92,7 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
+    return PopScope(
       onWillPop: () async {
         // Prevent back button from closing app
         if (_currentIndex > 0) {
