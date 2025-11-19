@@ -72,10 +72,12 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile Settings'),
-        actions: [
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Profile Settings'),
+          actions: [
           TextButton(
             onPressed: _isLoading ? null : _updateProfile,
             child: _isLoading
@@ -101,6 +103,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
             _buildAccountSection(context),
           ],
         ),
+      ),
       ),
     );
   }

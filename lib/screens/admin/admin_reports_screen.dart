@@ -366,123 +366,55 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
-              final isMobile = ResponsiveHelper.isMobile(context);
+              final crossAxisCount = ResponsiveHelper.getGridColumns(
+                context,
+                maxColumns: 3,
+              );
               final spacing = ResponsiveHelper.getSpacing(context);
               
-              if (isMobile) {
-                return Column(
-                  children: [
-                    _buildIndicator(
-                      'Loan Completion Rate',
-                      '${completionRate.toStringAsFixed(1)}%',
-                      Icons.trending_up,
-                      completionRate >= 70 ? Colors.green : Colors.orange,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildIndicator(
-                      'Average Contribution',
-                      AppHelpers.formatCurrency(averageContribution),
-                      Icons.payments,
-                      Theme.of(context).colorScheme.primary,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildIndicator(
-                      'Total Members',
-                      '$memberCount',
-                      Icons.people,
-                      Colors.blue,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildIndicator(
-                      'Active Loans',
-                      '$activeLoans',
-                      Icons.account_balance,
-                      Colors.orange,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildIndicator(
-                      'Lending Pool Balance',
-                      AppHelpers.formatCurrency(lendingPoolBalance),
-                      Icons.account_balance_wallet,
-                      Colors.purple,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildIndicator(
-                      'Fund Utilization',
-                      '${((totalLoans / (totalContributions > 0 ? totalContributions : 1)) * 100).toStringAsFixed(1)}%',
-                      Icons.trending_up,
-                      Colors.teal,
-                    ),
-                  ],
-                );
-              }
-              
-              return Column(
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+                childAspectRatio: ResponsiveHelper.isMobile(context) ? 1.2 : 1.4,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildIndicator(
-                          'Loan Completion Rate',
-                          '${completionRate.toStringAsFixed(1)}%',
-                          Icons.trending_up,
-                          completionRate >= 70 ? Colors.green : Colors.orange,
-                        ),
-                      ),
-                      SizedBox(width: spacing),
-                      Expanded(
-                        child: _buildIndicator(
-                          'Average Contribution',
-                          AppHelpers.formatCurrency(averageContribution),
-                          Icons.payments,
-                          Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ],
+                  _buildIndicator(
+                    'Loan Completion Rate',
+                    '${completionRate.toStringAsFixed(1)}%',
+                    Icons.trending_up,
+                    completionRate >= 70 ? Colors.green : Colors.orange,
                   ),
-                  SizedBox(height: spacing),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildIndicator(
-                          'Total Members',
-                          '$memberCount',
-                          Icons.people,
-                          Colors.blue,
-                        ),
-                      ),
-                      SizedBox(width: spacing),
-                      Expanded(
-                        child: _buildIndicator(
-                          'Active Loans',
-                          '$activeLoans',
-                          Icons.account_balance,
-                          Colors.orange,
-                        ),
-                      ),
-                    ],
+                  _buildIndicator(
+                    'Average Contribution',
+                    AppHelpers.formatCurrency(averageContribution),
+                    Icons.payments,
+                    Theme.of(context).colorScheme.primary,
                   ),
-                  SizedBox(height: spacing),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildIndicator(
-                          'Lending Pool Balance',
-                          AppHelpers.formatCurrency(lendingPoolBalance),
-                          Icons.account_balance_wallet,
-                          Colors.purple,
-                        ),
-                      ),
-                      SizedBox(width: spacing),
-                      Expanded(
-                        child: _buildIndicator(
-                          'Fund Utilization',
-                          '${((totalLoans / (totalContributions > 0 ? totalContributions : 1)) * 100).toStringAsFixed(1)}%',
-                          Icons.trending_up,
-                          Colors.teal,
-                        ),
-                      ),
-                    ],
+                  _buildIndicator(
+                    'Total Members',
+                    '$memberCount',
+                    Icons.people,
+                    Colors.blue,
+                  ),
+                  _buildIndicator(
+                    'Active Loans',
+                    '$activeLoans',
+                    Icons.account_balance,
+                    Colors.orange,
+                  ),
+                  _buildIndicator(
+                    'Lending Pool Balance',
+                    AppHelpers.formatCurrency(lendingPoolBalance),
+                    Icons.account_balance_wallet,
+                    Colors.purple,
+                  ),
+                  _buildIndicator(
+                    'Fund Utilization',
+                    '${((totalLoans / (totalContributions > 0 ? totalContributions : 1)) * 100).toStringAsFixed(1)}%',
+                    Icons.trending_up,
+                    Colors.teal,
                   ),
                 ],
               );
@@ -499,27 +431,52 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
     IconData icon,
     Color color,
   ) {
-    return Column(
-      children: [
-        Icon(icon, size: 24, color: color),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-          textAlign: TextAlign.center,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 24, color: color),
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 
@@ -602,27 +559,53 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
   }
 
   Widget _buildSummaryItem(String title, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-          textAlign: TextAlign.center,
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: primaryColor.withOpacity(0.3),
+          width: 1,
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 24, color: primaryColor),
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 
@@ -873,79 +856,39 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
-              final isMobile = ResponsiveHelper.isMobile(context);
+              final crossAxisCount = ResponsiveHelper.getGridColumns(
+                context,
+                maxColumns: 2,
+              );
               final spacing = ResponsiveHelper.getSpacing(context);
               
-              if (isMobile) {
-                return Column(
-                  children: [
-                    _buildSummaryItem(
-                      'Total Loans',
-                      AppHelpers.formatCurrency(totalLoans),
-                      Icons.account_balance,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildSummaryItem(
-                      'Active Loans',
-                      AppHelpers.formatCurrency(activeLoans),
-                      Icons.trending_up,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildSummaryItem(
-                      'Completed Loans',
-                      AppHelpers.formatCurrency(completedLoans),
-                      Icons.check_circle,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildSummaryItem(
-                      'Total Count',
-                      '${loanProvider.loans.length}',
-                      Icons.numbers,
-                    ),
-                  ],
-                );
-              }
-              
-              return Column(
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+                childAspectRatio: ResponsiveHelper.isMobile(context) ? 1.3 : 1.5,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSummaryItem(
-                          'Total Loans',
-                          AppHelpers.formatCurrency(totalLoans),
-                          Icons.account_balance,
-                        ),
-                      ),
-                      SizedBox(width: spacing),
-                      Expanded(
-                        child: _buildSummaryItem(
-                          'Active Loans',
-                          AppHelpers.formatCurrency(activeLoans),
-                          Icons.trending_up,
-                        ),
-                      ),
-                    ],
+                  _buildSummaryItem(
+                    'Total Loans',
+                    AppHelpers.formatCurrency(totalLoans),
+                    Icons.account_balance,
                   ),
-                  SizedBox(height: spacing),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSummaryItem(
-                          'Completed Loans',
-                          AppHelpers.formatCurrency(completedLoans),
-                          Icons.check_circle,
-                        ),
-                      ),
-                      SizedBox(width: spacing),
-                      Expanded(
-                        child: _buildSummaryItem(
-                          'Total Count',
-                          '${loanProvider.loans.length}',
-                          Icons.numbers,
-                        ),
-                      ),
-                    ],
+                  _buildSummaryItem(
+                    'Active Loans',
+                    AppHelpers.formatCurrency(activeLoans),
+                    Icons.trending_up,
+                  ),
+                  _buildSummaryItem(
+                    'Completed Loans',
+                    AppHelpers.formatCurrency(completedLoans),
+                    Icons.check_circle,
+                  ),
+                  _buildSummaryItem(
+                    'Total Count',
+                    '${loanProvider.loans.length}',
+                    Icons.numbers,
                   ),
                 ],
               );
@@ -1205,87 +1148,43 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
-              final isMobile = ResponsiveHelper.isMobile(context);
+              final crossAxisCount = ResponsiveHelper.getGridColumns(
+                context,
+                maxColumns: 2,
+              );
               final spacing = ResponsiveHelper.getSpacing(context);
               
-              if (isMobile) {
-                return Column(
-                  children: [
-                    _buildIndicator(
-                      'ROI',
-                      '${roi.toStringAsFixed(2)}%',
-                      Icons.trending_up,
-                      roi > 5 ? Colors.green : Colors.orange,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildIndicator(
-                      'Avg Interest Rate',
-                      '${averageInterestRate.toStringAsFixed(2)}%',
-                      Icons.percent,
-                      averageInterestRate > 10 ? Colors.green : Colors.blue,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildIndicator(
-                      'Total Interest',
-                      AppHelpers.formatCurrency(totalInterest),
-                      Icons.account_balance_wallet,
-                      Colors.purple,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildIndicator(
-                      'Completed Loans',
-                      '${completedLoans.length}',
-                      Icons.check_circle,
-                      Colors.green,
-                    ),
-                  ],
-                );
-              }
-              
-              return Column(
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+                childAspectRatio: ResponsiveHelper.isMobile(context) ? 1.2 : 1.4,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildIndicator(
-                          'ROI',
-                          '${roi.toStringAsFixed(2)}%',
-                          Icons.trending_up,
-                          roi > 5 ? Colors.green : Colors.orange,
-                        ),
-                      ),
-                      SizedBox(width: spacing),
-                      Expanded(
-                        child: _buildIndicator(
-                          'Avg Interest Rate',
-                          '${averageInterestRate.toStringAsFixed(2)}%',
-                          Icons.percent,
-                          averageInterestRate > 10 ? Colors.green : Colors.blue,
-                        ),
-                      ),
-                    ],
+                  _buildIndicator(
+                    'ROI',
+                    '${roi.toStringAsFixed(2)}%',
+                    Icons.trending_up,
+                    roi > 5 ? Colors.green : Colors.orange,
                   ),
-                  SizedBox(height: spacing),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildIndicator(
-                          'Total Interest',
-                          AppHelpers.formatCurrency(totalInterest),
-                          Icons.account_balance_wallet,
-                          Colors.purple,
-                        ),
-                      ),
-                      SizedBox(width: spacing),
-                      Expanded(
-                        child: _buildIndicator(
-                          'Completed Loans',
-                          '${completedLoans.length}',
-                          Icons.check_circle,
-                          Colors.green,
-                        ),
-                      ),
-                    ],
+                  _buildIndicator(
+                    'Avg Interest Rate',
+                    '${averageInterestRate.toStringAsFixed(2)}%',
+                    Icons.percent,
+                    averageInterestRate > 10 ? Colors.green : Colors.blue,
+                  ),
+                  _buildIndicator(
+                    'Total Interest',
+                    AppHelpers.formatCurrency(totalInterest),
+                    Icons.account_balance_wallet,
+                    Colors.purple,
+                  ),
+                  _buildIndicator(
+                    'Completed Loans',
+                    '${completedLoans.length}',
+                    Icons.check_circle,
+                    Colors.green,
                   ),
                 ],
               );
@@ -1366,87 +1265,43 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
-              final isMobile = ResponsiveHelper.isMobile(context);
+              final crossAxisCount = ResponsiveHelper.getGridColumns(
+                context,
+                maxColumns: 2,
+              );
               final spacing = ResponsiveHelper.getSpacing(context);
               
-              if (isMobile) {
-                return Column(
-                  children: [
-                    _buildIndicator(
-                      'Monthly Income',
-                      AppHelpers.formatCurrency(projectedMonthlyIncome),
-                      Icons.calendar_month,
-                      Colors.green,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildIndicator(
-                      'Monthly Outflow',
-                      AppHelpers.formatCurrency(projectedMonthlyOutflow),
-                      Icons.trending_down,
-                      Colors.red,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildIndicator(
-                      'Net Cash Flow',
-                      AppHelpers.formatCurrency(projectedNetCashFlow),
-                      Icons.account_balance,
-                      projectedNetCashFlow >= 0 ? Colors.green : Colors.red,
-                    ),
-                    SizedBox(height: spacing),
-                    _buildIndicator(
-                      'Yearly Projection',
-                      AppHelpers.formatCurrency(projectedYearlyIncome),
-                      Icons.calendar_today,
-                      Colors.blue,
-                    ),
-                  ],
-                );
-              }
-              
-              return Column(
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+                childAspectRatio: ResponsiveHelper.isMobile(context) ? 1.2 : 1.4,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildIndicator(
-                          'Monthly Income',
-                          AppHelpers.formatCurrency(projectedMonthlyIncome),
-                          Icons.calendar_month,
-                          Colors.green,
-                        ),
-                      ),
-                      SizedBox(width: spacing),
-                      Expanded(
-                        child: _buildIndicator(
-                          'Monthly Outflow',
-                          AppHelpers.formatCurrency(projectedMonthlyOutflow),
-                          Icons.trending_down,
-                          Colors.red,
-                        ),
-                      ),
-                    ],
+                  _buildIndicator(
+                    'Monthly Income',
+                    AppHelpers.formatCurrency(projectedMonthlyIncome),
+                    Icons.calendar_month,
+                    Colors.green,
                   ),
-                  SizedBox(height: spacing),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildIndicator(
-                          'Net Cash Flow',
-                          AppHelpers.formatCurrency(projectedNetCashFlow),
-                          Icons.account_balance,
-                          projectedNetCashFlow >= 0 ? Colors.green : Colors.red,
-                        ),
-                      ),
-                      SizedBox(width: spacing),
-                      Expanded(
-                        child: _buildIndicator(
-                          'Yearly Projection',
-                          AppHelpers.formatCurrency(projectedYearlyIncome),
-                          Icons.calendar_today,
-                          Colors.blue,
-                        ),
-                      ),
-                    ],
+                  _buildIndicator(
+                    'Monthly Outflow',
+                    AppHelpers.formatCurrency(projectedMonthlyOutflow),
+                    Icons.trending_down,
+                    Colors.red,
+                  ),
+                  _buildIndicator(
+                    'Net Cash Flow',
+                    AppHelpers.formatCurrency(projectedNetCashFlow),
+                    Icons.account_balance,
+                    projectedNetCashFlow >= 0 ? Colors.green : Colors.red,
+                  ),
+                  _buildIndicator(
+                    'Yearly Projection',
+                    AppHelpers.formatCurrency(projectedYearlyIncome),
+                    Icons.calendar_today,
+                    Colors.blue,
                   ),
                 ],
               );

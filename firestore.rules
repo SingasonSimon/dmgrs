@@ -85,6 +85,14 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && 
         (resource.data.adminId == request.auth.uid || isAdmin());
     }
+    
+    // Meetings - authenticated users can read, admins can create/update/delete
+    match /meetings/{meetingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
+        (resource.data.organizerId == request.auth.uid || isAdmin());
+    }
   }
 }
 

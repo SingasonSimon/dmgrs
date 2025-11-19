@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/contribution_provider.dart';
@@ -177,62 +178,103 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_getAppBarTitle()),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          // If on dashboard (index 0), allow back navigation to exit app
+          if (_currentIndex == 0) {
+            // Show exit confirmation dialog
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Exit App'),
+                content: const Text('Do you want to exit the app?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      SystemNavigator.pop();
+                    },
+                    child: const Text('Exit'),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            // Navigate back to dashboard
+            _onTabTapped(0);
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_getAppBarTitle()),
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
           ),
+          actions: _getAppBarActions(),
         ),
-        actions: _getAppBarActions(),
-      ),
-      drawer: ModernNavigationDrawer(
-        isAdmin: true,
-        onNavigationTap: (index) {
-          setState(() {
-            _currentIndex = index;
-            _pageController.jumpToPage(index);
-          });
-          Navigator.of(context).pop();
-        },
-        onProfileTap: () {
-          Navigator.of(context).pop();
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AdminProfileScreen()),
-          );
-        },
-        onLogoutTap: () async {
-          Navigator.of(context).pop();
-          final authProvider = Provider.of<AuthProvider>(
-            context,
-            listen: false,
-          );
-          await authProvider.signOut();
-        },
-      ),
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        children: const [
-          _AdminDashboardTab(),
-          _MembersTab(),
-          _LoansTab(),
-          _AllocationsTab(),
-          AdminReportsScreen(),
-          AdminMeetingsScreen(),
-        ],
-      ),
-      bottomNavigationBar: ModernBottomNav(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        isAdmin: true,
+        drawer: ModernNavigationDrawer(
+          isAdmin: true,
+          onNavigationTap: (index) {
+            // Validate index before navigation
+            if (index >= 0 && index < 6 && mounted) {
+              // Use a small delay to ensure drawer is closed
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted && _pageController.hasClients) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                  _pageController.jumpToPage(index);
+                }
+              });
+            }
+          },
+          onProfileTap: () {
+            Navigator.of(context).pop();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AdminProfileScreen()),
+            );
+          },
+          onLogoutTap: () async {
+            Navigator.of(context).pop();
+            final authProvider = Provider.of<AuthProvider>(
+              context,
+              listen: false,
+            );
+            await authProvider.signOut();
+          },
+        ),
+        body: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          children: const [
+            _AdminDashboardTab(),
+            _MembersTab(),
+            _LoansTab(),
+            _AllocationsTab(),
+            AdminReportsScreen(),
+            AdminMeetingsScreen(),
+          ],
+        ),
+        bottomNavigationBar: ModernBottomNav(
+          currentIndex: _currentIndex,
+          onTap: _onTabTapped,
+          isAdmin: true,
+        ),
       ),
     );
   }
@@ -862,6 +904,8 @@ class _MembersTabState extends State<_MembersTab> {
   }
 
   void _loadMembers() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
     });
@@ -878,10 +922,18 @@ class _MembersTabState extends State<_MembersTab> {
         });
       }
     } catch (e) {
+      print('Error loading members: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _allMembers = [];
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load members: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -914,52 +966,58 @@ class _MembersTabState extends State<_MembersTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    return Scaffold(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _allMembers.isEmpty
+              ? _buildEmptyState(context)
+              : _buildMembersList(context),
+    );
+  }
 
-    if (_allMembers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.people_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No members found',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add your first member to get started',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AdminAddUserScreen(),
-                  ),
-                );
-                // Refresh member list if user was created
-                if (result == true && mounted) {
-                  _loadMembers();
-                }
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Add Member'),
-            ),
-          ],
-        ),
-      );
-    }
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.people_outline,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No members found',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add your first member to get started',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminAddUserScreen(),
+                ),
+              );
+              // Refresh member list if user was created
+              if (result == true && mounted) {
+                _loadMembers();
+              }
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Add Member'),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildMembersList(BuildContext context) {
     return Column(
       children: [
         // Pagination info

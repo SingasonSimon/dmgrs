@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/contribution_provider.dart';
@@ -72,10 +73,36 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _currentIndex == 0,
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && _currentIndex > 0) {
-          _onTabTapped(0);
+        if (!didPop) {
+          // If on dashboard (index 0), allow back navigation to exit app
+          if (_currentIndex == 0) {
+            // Show exit confirmation dialog
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Exit App'),
+                content: const Text('Do you want to exit the app?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      SystemNavigator.pop();
+                    },
+                    child: const Text('Exit'),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            // Navigate back to dashboard
+            _onTabTapped(0);
+          }
         }
       },
       child: Scaffold(
@@ -140,14 +167,22 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
         drawer: ModernNavigationDrawer(
           isAdmin: false,
           onNavigationTap: (index) {
-            setState(() {
-              _currentIndex = index;
-              _pageController.animateToPage(
-                index,
-                duration: AppConstants.mediumAnimation,
-                curve: Curves.easeInOut,
-              );
-            });
+            // Validate index before navigation
+            if (index >= 0 && index < 6 && mounted) {
+              // Use a small delay to ensure drawer is closed
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted && _pageController.hasClients) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                  _pageController.animateToPage(
+                    index,
+                    duration: AppConstants.mediumAnimation,
+                    curve: Curves.easeInOut,
+                  );
+                }
+              });
+            }
           },
           onProfileTap: () {
             Navigator.push(

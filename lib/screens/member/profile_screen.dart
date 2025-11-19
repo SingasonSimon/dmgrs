@@ -15,10 +15,12 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Profile'),
+          actions: [
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
@@ -68,6 +70,7 @@ class ProfileScreen extends StatelessWidget {
             ),
           );
         },
+      ),
       ),
     );
   }

@@ -299,7 +299,7 @@ class SimpleLineChart extends StatelessWidget {
   Widget build(BuildContext context) {
     if (data.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: ResponsiveHelper.getPadding(context),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
@@ -310,15 +310,26 @@ class SimpleLineChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
+            if (title.isNotEmpty)
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            if (title.isNotEmpty) const SizedBox(height: 16),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Text(
+                  'No data available',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            const Center(child: Text('No data available')),
           ],
         ),
       );
@@ -327,133 +338,167 @@ class SimpleLineChart extends StatelessWidget {
     final max =
         maxValue ?? data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
     final min = data.map((e) => e.value).reduce((a, b) => a < b ? a : b);
-    final range = max - min;
+    // Ensure minimum range for better visualization
+    final adjustedMax = (max == min ? max + 1000 : max).toDouble();
+    final adjustedMin = (max == min ? (min > 0 ? min - 1000 : 0) : min).toDouble();
+    final adjustedRange = adjustedMax - adjustedMin;
+
+    final primaryColor = lineColor ?? Theme.of(context).colorScheme.primary;
+    final fillGradientColor = fillColor ?? primaryColor.withOpacity(0.15);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: ResponsiveHelper.getPadding(context),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
+          if (title.isNotEmpty) ...[
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 20),
+          ],
           LayoutBuilder(
             builder: (context, constraints) {
               final chartHeight = ResponsiveHelper.getChartHeight(
                 context,
-                baseHeight: 200,
+                baseHeight: ResponsiveHelper.isMobile(context) ? 220 : 280,
               );
               final isSmallScreen = ResponsiveHelper.isMobile(context);
+              final chartWidth = isSmallScreen && data.length > 6
+                  ? (data.length * 70).toDouble().clamp(
+                      constraints.maxWidth,
+                      double.infinity,
+                    )
+                  : constraints.maxWidth;
               
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Y-axis labels
                   SizedBox(
                     height: chartHeight,
-                    child: isSmallScreen && data.length > 6
-                        ? SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: SizedBox(
-                              width: (data.length * 60).toDouble().clamp(
-                                constraints.maxWidth,
-                                double.infinity,
-                              ),
-                              height: chartHeight,
-                              child: CustomPaint(
-                                painter: LineChartPainter(
-                                  data: data,
-                                  max: max,
-                                  min: min,
-                                  range: range,
-                                  lineColor: lineColor ??
-                                      Theme.of(context).colorScheme.primary,
-                                  fillColor: fillColor ??
-                                      (lineColor ??
-                                              Theme.of(context)
-                                                  .colorScheme.primary)
-                                          .withOpacity(0.1),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Y-axis labels
+                        SizedBox(
+                          width: isSmallScreen ? 45 : 60,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: List.generate(5, (index) {
+                              final value = adjustedMax -
+                                  (adjustedRange / 4) * index;
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  right: isSmallScreen ? 4 : 8,
                                 ),
-                                child: Container(),
-                              ),
-                            ),
-                          )
-                        : CustomPaint(
-                            painter: LineChartPainter(
-                              data: data,
-                              max: max,
-                              min: min,
-                              range: range,
-                              lineColor: lineColor ??
-                                  Theme.of(context).colorScheme.primary,
-                              fillColor: fillColor ??
-                                  (lineColor ??
-                                          Theme.of(context).colorScheme.primary)
-                                      .withOpacity(0.1),
-                            ),
-                            child: Container(),
+                                child: Text(
+                                  _formatChartValue(value),
+                                  style: Theme.of(context)
+                                      .textTheme.bodySmall
+                                      ?.copyWith(
+                                        fontSize: isSmallScreen ? 9 : 10,
+                                        color: Theme.of(context)
+                                            .colorScheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                  textAlign: TextAlign.right,
+                                ),
+                              );
+                            }),
                           ),
+                        ),
+                        // Chart area
+                        Expanded(
+                          child: isSmallScreen && data.length > 6
+                              ? SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: SizedBox(
+                                    width: chartWidth,
+                                    height: chartHeight,
+                                    child: CustomPaint(
+                                      painter: LineChartPainter(
+                                        data: data,
+                                        max: adjustedMax,
+                                        min: adjustedMin,
+                                        range: adjustedRange,
+                                        lineColor: primaryColor,
+                                        fillColor: fillGradientColor,
+                                        showGrid: true,
+                                      ),
+                                      child: Container(),
+                                    ),
+                                  ),
+                                )
+                              : CustomPaint(
+                                  painter: LineChartPainter(
+                                    data: data,
+                                    max: adjustedMax,
+                                    min: adjustedMin,
+                                    range: adjustedRange,
+                                    lineColor: primaryColor,
+                                    fillColor: fillGradientColor,
+                                    showGrid: true,
+                                  ),
+                                  child: Container(),
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  // Month labels and values
+                  const SizedBox(height: 12),
+                  // X-axis labels (month names)
                   isSmallScreen && data.length > 6
                       ? SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: SizedBox(
-                            width: (data.length * 60).toDouble().clamp(
-                              constraints.maxWidth,
-                              double.infinity,
-                            ),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: data.map((item) {
-                                    final formattedValue =
-                                        _formatChartValue(item.value);
-                                    return SizedBox(
-                                      width: 50,
-                                      child: Text(
-                                        formattedValue,
+                            width: chartWidth,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: data.map((item) {
+                                return SizedBox(
+                                  width: 60,
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        _formatChartValue(item.value),
                                         style: Theme.of(context)
                                             .textTheme.bodySmall
                                             ?.copyWith(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              color: Theme.of(context)
-                                                  .colorScheme.primary,
+                                              fontSize: isSmallScreen ? 9 : 10,
+                                              fontWeight: FontWeight.w600,
+                                              color: primaryColor,
                                             ),
                                         textAlign: TextAlign.center,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                    );
-                                  }).toList(),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: data.map((item) {
-                                    return SizedBox(
-                                      width: 50,
-                                      child: Text(
+                                      const SizedBox(height: 4),
+                                      Text(
                                         item.label,
                                         style: Theme.of(context)
                                             .textTheme.bodySmall
                                             ?.copyWith(
-                                              fontSize: 10,
+                                              fontSize: isSmallScreen ? 9 : 10,
                                               color: Theme.of(context)
                                                   .colorScheme.onSurfaceVariant,
                                             ),
@@ -461,49 +506,39 @@ class SimpleLineChart extends StatelessWidget {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ],
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
                             ),
                           ),
                         )
-                      : Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: data.map((item) {
-                                final formattedValue =
-                                    _formatChartValue(item.value);
-                                return Expanded(
-                                  child: Text(
-                                    formattedValue,
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: data.map((item) {
+                            return Expanded(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    _formatChartValue(item.value),
                                     style: Theme.of(context)
                                         .textTheme.bodySmall
                                         ?.copyWith(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(context)
-                                              .colorScheme.primary,
+                                          fontSize: isSmallScreen ? 9 : 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: primaryColor,
                                         ),
                                     textAlign: TextAlign.center,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: data.map((item) {
-                                return Expanded(
-                                  child: Text(
+                                  const SizedBox(height: 4),
+                                  Text(
                                     item.label,
                                     style: Theme.of(context)
                                         .textTheme.bodySmall
                                         ?.copyWith(
-                                          fontSize: 10,
+                                          fontSize: isSmallScreen ? 9 : 10,
                                           color: Theme.of(context)
                                               .colorScheme.onSurfaceVariant,
                                         ),
@@ -511,10 +546,10 @@ class SimpleLineChart extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                );
-                              }).toList(),
-                            ),
-                          ],
+                                ],
+                              ),
+                            );
+                          }).toList(),
                         ),
                 ],
               );
@@ -545,6 +580,7 @@ class LineChartPainter extends CustomPainter {
   final double range;
   final Color lineColor;
   final Color fillColor;
+  final bool showGrid;
 
   LineChartPainter({
     required this.data,
@@ -553,58 +589,146 @@ class LineChartPainter extends CustomPainter {
     required this.range,
     required this.lineColor,
     required this.fillColor,
+    this.showGrid = true,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
 
-    final paint = Paint()
-      ..color = lineColor
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+    final width = size.width;
+    final height = size.height;
+    final stepX = data.length > 1 ? width / (data.length - 1) : width;
+
+    // Draw grid lines if enabled
+    if (showGrid) {
+      final gridPaint = Paint()
+        ..color = Colors.grey.withOpacity(0.15)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke;
+
+      // Horizontal grid lines (5 lines)
+      for (int i = 0; i <= 4; i++) {
+        final y = (height / 4) * i;
+        canvas.drawLine(
+          Offset(0, y),
+          Offset(width, y),
+          gridPaint,
+        );
+      }
+
+      // Vertical grid lines (for each data point)
+      for (int i = 0; i < data.length; i++) {
+        final x = i * stepX;
+        canvas.drawLine(
+          Offset(x, 0),
+          Offset(x, height),
+          gridPaint,
+        );
+      }
+    }
+
+    // Create gradient for fill
+    final fillGradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        fillColor,
+        fillColor.withOpacity(0.0),
+      ],
+    );
 
     final fillPaint = Paint()
-      ..color = fillColor
+      ..shader = fillGradient.createShader(
+        Rect.fromLTWH(0, 0, width, height),
+      )
       ..style = PaintingStyle.fill;
+
+    // Line paint with better styling
+    final linePaint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 3.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
     final path = Path();
     final fillPath = Path();
 
-    final width = size.width;
-    final height = size.height;
-    final stepX = width / (data.length - 1);
-
-    // Start the fill path from the bottom
+    // Start the fill path from the bottom-left
     fillPath.moveTo(0, height);
 
+    // Calculate points with smooth curves
+    final points = <Offset>[];
     for (int i = 0; i < data.length; i++) {
       final x = i * stepX;
-      final normalizedValue = range > 0 ? (data[i].value - min) / range : 0.5;
+      final normalizedValue =
+          range > 0 ? (data[i].value - min) / range : 0.5;
       final y = height - (normalizedValue * height);
+      points.add(Offset(x, y));
+    }
 
-      if (i == 0) {
-        path.moveTo(x, y);
-        fillPath.lineTo(x, y);
-      } else {
-        path.lineTo(x, y);
-        fillPath.lineTo(x, y);
+    // Create smooth curve using cubic bezier
+    if (points.length > 1) {
+      path.moveTo(points[0].dx, points[0].dy);
+      fillPath.lineTo(points[0].dx, points[0].dy);
+
+      for (int i = 0; i < points.length - 1; i++) {
+        final p0 = points[i];
+        final p1 = points[i + 1];
+        final controlPoint1 = Offset(
+          p0.dx + (p1.dx - p0.dx) / 2,
+          p0.dy,
+        );
+        final controlPoint2 = Offset(
+          p0.dx + (p1.dx - p0.dx) / 2,
+          p1.dy,
+        );
+
+        path.cubicTo(
+          controlPoint1.dx,
+          controlPoint1.dy,
+          controlPoint2.dx,
+          controlPoint2.dy,
+          p1.dx,
+          p1.dy,
+        );
+        fillPath.cubicTo(
+          controlPoint1.dx,
+          controlPoint1.dy,
+          controlPoint2.dx,
+          controlPoint2.dy,
+          p1.dx,
+          p1.dy,
+        );
       }
-
-      // Draw data points
-      canvas.drawCircle(Offset(x, y), 3, Paint()..color = lineColor);
     }
 
     // Complete the fill path
     fillPath.lineTo(width, height);
     fillPath.close();
 
-    // Draw fill area
+    // Draw fill area (gradient)
     canvas.drawPath(fillPath, fillPaint);
 
     // Draw line
-    canvas.drawPath(path, paint);
+    canvas.drawPath(path, linePaint);
+
+    // Draw data points with better styling
+    final pointPaint = Paint()
+      ..color = lineColor
+      ..style = PaintingStyle.fill;
+
+    final pointBorderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    for (final point in points) {
+      // Draw white circle background
+      canvas.drawCircle(point, 5, pointBorderPaint);
+      // Draw colored circle
+      canvas.drawCircle(point, 3.5, pointPaint);
+    }
   }
 
   @override

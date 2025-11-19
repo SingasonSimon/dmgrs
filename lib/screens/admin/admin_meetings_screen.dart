@@ -25,14 +25,24 @@ class _AdminMeetingsScreenState extends State<AdminMeetingsScreen> {
   }
 
   Future<void> _loadMeetings() async {
+    if (!mounted) return;
+    
     setState(() => _isLoading = true);
     try {
       final meetings = await MeetingService.getAllMeetings();
-      setState(() => _meetings = meetings);
+      if (mounted) {
+        setState(() => _meetings = meetings);
+      }
     } catch (e) {
-      _showError('Failed to load meetings: $e');
+      print('Error loading meetings: $e');
+      if (mounted) {
+        setState(() => _meetings = []);
+        _showError('Failed to load meetings: ${e.toString()}');
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

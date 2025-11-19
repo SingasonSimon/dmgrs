@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_theme.dart';
 import '../screens/admin/admin_profile_screen.dart';
+import '../screens/member/profile_screen.dart';
 
 class ModernNavigationDrawer extends StatelessWidget {
   final VoidCallback? onProfileTap;
@@ -178,12 +179,18 @@ class ModernNavigationDrawer extends StatelessWidget {
               IconButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AdminProfileScreen(),
-                    ),
-                  );
+                  if (onProfileTap != null) {
+                    onProfileTap!();
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => isAdmin
+                            ? const AdminProfileScreen()
+                            : const ProfileScreen(),
+                      ),
+                    );
+                  }
                 },
                 icon: Icon(
                   Icons.edit,
@@ -267,7 +274,9 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(0);
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  onNavigationTap?.call(0);
+                });
               }
             },
           ),
@@ -278,7 +287,9 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(1);
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  onNavigationTap?.call(1);
+                });
               }
             },
           ),
@@ -289,7 +300,9 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(2);
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  onNavigationTap?.call(2);
+                });
               }
             },
           ),
@@ -300,7 +313,9 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(3);
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  onNavigationTap?.call(3);
+                });
               }
             },
           ),
@@ -311,7 +326,9 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(4);
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  onNavigationTap?.call(4);
+                });
               }
             },
           ),
@@ -322,7 +339,9 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(5);
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  onNavigationTap?.call(5);
+                });
               }
             },
           ),
@@ -361,7 +380,9 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(0);
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  onNavigationTap?.call(0);
+                });
               }
             },
           ),
@@ -372,7 +393,9 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(1);
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  onNavigationTap?.call(1);
+                });
               }
             },
           ),
@@ -383,7 +406,9 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(2);
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  onNavigationTap?.call(2);
+                });
               }
             },
           ),
@@ -394,7 +419,9 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(3);
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  onNavigationTap?.call(3);
+                });
               }
             },
           ),
@@ -405,7 +432,9 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(4); // Meetings is now at index 4
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  onNavigationTap?.call(4); // Meetings is now at index 4
+                });
               }
             },
           ),
@@ -417,7 +446,7 @@ class ModernNavigationDrawer extends StatelessWidget {
             onTap: () {
               if (context.mounted) {
                 Navigator.pop(context);
-                onNavigationTap?.call(5); // Profile is now at index 5
+                onProfileTap?.call();
               }
             },
           ),
