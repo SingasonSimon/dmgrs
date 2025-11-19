@@ -373,7 +373,7 @@ class _CreateMeetingDialogState extends State<_CreateMeetingDialog> {
   final _googleMeetUrlController = TextEditingController();
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = const TimeOfDay(hour: 14, minute: 0);
-  List<String> _attendeeIds = [];
+  final List<String> _attendeeIds = [];
   String _meetingType = 'general';
 
   @override
@@ -457,7 +457,7 @@ class _CreateMeetingDialogState extends State<_CreateMeetingDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _meetingType,
+                initialValue: _meetingType,
                 decoration: const InputDecoration(
                   labelText: 'Meeting Type',
                   border: OutlineInputBorder(),

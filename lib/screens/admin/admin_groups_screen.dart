@@ -6,6 +6,7 @@ import '../../models/group_model.dart';
 import '../../widgets/modern_card.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
+import '../../utils/responsive.dart';
 import '../../services/firestore_service.dart';
 
 class AdminGroupsScreen extends StatefulWidget {
@@ -213,30 +214,62 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
               Text(
                 group.description,
                 style: Theme.of(context).textTheme.bodyMedium,
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _handleGroupAction(context, group, 'view'),
-                    icon: const Icon(Icons.visibility, size: 18),
-                    label: const Text('View'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () =>
-                        _handleGroupAction(context, group, 'members'),
-                    icon: const Icon(Icons.people, size: 18),
-                    label: const Text('Members'),
-                  ),
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = ResponsiveHelper.isMobile(context);
+                final spacing = ResponsiveHelper.getSpacing(context);
+                
+                if (isMobile) {
+                  return Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _handleGroupAction(context, group, 'view'),
+                          icon: const Icon(Icons.visibility, size: 18),
+                          label: const Text('View'),
+                        ),
+                      ),
+                      SizedBox(height: spacing),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              _handleGroupAction(context, group, 'members'),
+                          icon: const Icon(Icons.people, size: 18),
+                          label: const Text('Members'),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                
+                return Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _handleGroupAction(context, group, 'view'),
+                        icon: const Icon(Icons.visibility, size: 18),
+                        label: const Text('View'),
+                      ),
+                    ),
+                    SizedBox(width: spacing),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            _handleGroupAction(context, group, 'members'),
+                        icon: const Icon(Icons.people, size: 18),
+                        label: const Text('Members'),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -491,7 +524,7 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
         title: Text('${group.groupName} - Members'),
         content: SizedBox(
           width: double.maxFinite,
-          height: 400,
+          height: ResponsiveHelper.getDialogHeight(context, maxHeight: 500),
           child: Column(
             children: [
               Row(
@@ -647,8 +680,9 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
           title: const Text('Add Existing Member'),
           content: SizedBox(
             width: double.maxFinite,
-            height: 400,
-            child: Column(
+            height: ResponsiveHelper.getDialogHeight(context, maxHeight: 500),
+            child: SingleChildScrollView(
+              child: Column(
               children: [
                 TextField(
                   controller: searchController,
@@ -835,6 +869,7 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
                   ),
               ],
             ),
+            ),
           ),
           actions: [
             TextButton(
@@ -861,7 +896,7 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
         title: const Text('Add New Member'),
         content: SizedBox(
           width: double.maxFinite,
-          height: 500,
+          height: ResponsiveHelper.getDialogHeight(context, maxHeight: 600),
           child: Form(
             key: formKey,
             child: SingleChildScrollView(
@@ -937,7 +972,7 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: selectedRole,
+                    initialValue: selectedRole,
                     decoration: const InputDecoration(
                       labelText: 'Role',
                       border: OutlineInputBorder(),
@@ -953,7 +988,7 @@ class _AdminGroupsScreenState extends State<AdminGroupsScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: selectedStatus,
+                    initialValue: selectedStatus,
                     decoration: const InputDecoration(
                       labelText: 'Status',
                       border: OutlineInputBorder(),

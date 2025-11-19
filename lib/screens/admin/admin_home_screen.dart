@@ -7,6 +7,7 @@ import '../../providers/notification_provider.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
 import '../../utils/phone_formatter.dart';
+import '../../utils/responsive.dart';
 import '../../widgets/modern_bottom_nav.dart';
 import '../../widgets/modern_card.dart';
 import '../../widgets/modern_navigation_drawer.dart';
@@ -310,14 +311,22 @@ class _AdminDashboardTab extends StatelessWidget {
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.5,
-              children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final crossAxisCount = ResponsiveHelper.getGridColumns(
+                  context,
+                  maxColumns: 3,
+                );
+                final spacing = ResponsiveHelper.getSpacing(context);
+                
+                return GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: spacing,
+                  mainAxisSpacing: spacing,
+                  childAspectRatio: ResponsiveHelper.isMobile(context) ? 1.3 : 1.5,
+                  children: [
                 FutureBuilder<int>(
                   future: contributionProvider.getMemberCount(),
                   builder: (context, snapshot) {
@@ -382,7 +391,9 @@ class _AdminDashboardTab extends StatelessWidget {
                   icon: Icons.account_balance_wallet,
                   iconColor: Colors.teal,
                 ),
-              ],
+                  ],
+                );
+              },
             ),
           ],
         );
@@ -1225,77 +1236,168 @@ class _MembersTabState extends State<_MembersTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              member.name,
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Row(
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isMobile = ResponsiveHelper.isMobile(context);
+                          
+                          if (isMobile) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  member.name,
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: roleColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: roleColor.withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        member.role.toUpperCase(),
+                                        style: TextStyle(
+                                          color: roleColor,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: member.status == 'active'
+                                            ? Colors.green.withOpacity(0.1)
+                                            : member.status == 'inactive'
+                                            ? Colors.orange.withOpacity(0.1)
+                                            : Colors.red.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: member.status == 'active'
+                                              ? Colors.green.withOpacity(0.3)
+                                              : member.status == 'inactive'
+                                              ? Colors.orange.withOpacity(0.3)
+                                              : Colors.red.withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        member.status.toUpperCase(),
+                                        style: TextStyle(
+                                          color: member.status == 'active'
+                                              ? Colors.green
+                                              : member.status == 'inactive'
+                                              ? Colors.orange
+                                              : Colors.red,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          }
+                          
+                          return Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: roleColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: roleColor.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
+                              Expanded(
                                 child: Text(
-                                  member.role.toUpperCase(),
-                                  style: TextStyle(
-                                    color: roleColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  member.name,
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: member.status == 'active'
-                                      ? Colors.green.withOpacity(0.1)
-                                      : member.status == 'inactive'
-                                      ? Colors.orange.withOpacity(0.1)
-                                      : Colors.red.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: member.status == 'active'
-                                        ? Colors.green.withOpacity(0.3)
-                                        : member.status == 'inactive'
-                                        ? Colors.orange.withOpacity(0.3)
-                                        : Colors.red.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  member.status.toUpperCase(),
-                                  style: TextStyle(
-                                    color: member.status == 'active'
-                                        ? Colors.green
-                                        : member.status == 'inactive'
-                                        ? Colors.orange
-                                        : Colors.red,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              Flexible(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: roleColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: roleColor.withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        member.role.toUpperCase(),
+                                        style: TextStyle(
+                                          color: roleColor,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: member.status == 'active'
+                                            ? Colors.green.withOpacity(0.1)
+                                            : member.status == 'inactive'
+                                            ? Colors.orange.withOpacity(0.1)
+                                            : Colors.red.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: member.status == 'active'
+                                              ? Colors.green.withOpacity(0.3)
+                                              : member.status == 'inactive'
+                                              ? Colors.orange.withOpacity(0.3)
+                                              : Colors.red.withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        member.status.toUpperCase(),
+                                        style: TextStyle(
+                                          color: member.status == 'active'
+                                              ? Colors.green
+                                              : member.status == 'inactive'
+                                              ? Colors.orange
+                                              : Colors.red,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
-                          ),
-                        ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -1303,6 +1405,8 @@ class _MembersTabState extends State<_MembersTab> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -1401,47 +1505,75 @@ class _MembersTabState extends State<_MembersTab> {
                     ),
                   )
                 else
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _deactivateMember(context, member),
-                          icon: const Icon(Icons.person_off, size: 18),
-                          label: const Text('Deactivate'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            foregroundColor: Colors.orange,
-                            side: const BorderSide(color: Colors.orange),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isMobile = ResponsiveHelper.isMobile(context);
+                      final spacing = ResponsiveHelper.getSpacing(context);
+                      
+                      if (isMobile) {
+                        return Column(
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () => _deactivateMember(context, member),
+                                icon: const Icon(Icons.person_off, size: 18),
+                                label: const Text('Deactivate'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  foregroundColor: Colors.orange,
+                                  side: const BorderSide(color: Colors.orange),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: spacing),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () => _deleteMember(context, member),
+                                icon: const Icon(Icons.delete_forever, size: 18),
+                                label: const Text('Delete'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  foregroundColor: Colors.red,
+                                  side: const BorderSide(color: Colors.red),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                      
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _deactivateMember(context, member),
+                              icon: const Icon(Icons.person_off, size: 18),
+                              label: const Text('Deactivate'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                foregroundColor: Colors.orange,
+                                side: const BorderSide(color: Colors.orange),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _deleteMember(context, member),
-                          icon: const Icon(Icons.delete_forever, size: 18),
-                          label: const Text('Delete'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
+                          SizedBox(width: spacing),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _deleteMember(context, member),
+                              icon: const Icon(Icons.delete_forever, size: 18),
+                              label: const Text('Delete'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                foregroundColor: Colors.red,
+                                side: const BorderSide(color: Colors.red),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _deleteMember(context, member),
-                          icon: const Icon(Icons.delete_forever, size: 18),
-                          label: const Text('Delete'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
-                          ),
-                        ),
-                      ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
               ],
             ),

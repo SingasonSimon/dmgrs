@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/responsive.dart';
 
 // Color palette for charts
 class ChartColors {
@@ -106,66 +107,161 @@ class SimpleBarChart extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 280,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: data.map((item) {
-                final height = (item.value / max) * 200;
-                return Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 2,
-                          vertical: 1,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final chartHeight = ResponsiveHelper.getChartHeight(
+                context,
+                baseHeight: 280,
+              );
+              final barMaxHeight = chartHeight - 60; // Space for labels
+              final isSmallScreen = ResponsiveHelper.isMobile(context);
+              
+              return SizedBox(
+                height: chartHeight,
+                child: isSmallScreen && data.length > 6
+                    ? SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(
+                          width: (data.length * 60).toDouble().clamp(
+                            constraints.maxWidth,
+                            double.infinity,
+                          ),
+                          height: chartHeight,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: data.map((item) {
+                              final height = (item.value / max) * barMaxHeight;
+                              return SizedBox(
+                                width: 50,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 2,
+                                        vertical: 1,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        _formatNumber(item.value),
+                                        style: Theme.of(context)
+                                            .textTheme.bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 8,
+                                              color: Theme.of(context)
+                                                  .colorScheme.onSurface,
+                                            ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    AnimatedContainer(
+                                      duration: const Duration(milliseconds: 800),
+                                      width: 16,
+                                      height: height,
+                                      decoration: BoxDecoration(
+                                        color: barColor ??
+                                            Theme.of(context).colorScheme.primary,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item.label,
+                                      style: Theme.of(context)
+                                          .textTheme.bodySmall
+                                          ?.copyWith(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w500,
+                                            color: Theme.of(context)
+                                                .colorScheme.onSurface,
+                                          ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          _formatNumber(item.value),
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 8,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                        ),
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: data.map((item) {
+                          final height = (item.value / max) * barMaxHeight;
+                          return Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    _formatNumber(item.value),
+                                    style: Theme.of(context)
+                                        .textTheme.bodySmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 8,
+                                          color: Theme.of(context)
+                                              .colorScheme.onSurface,
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 800),
+                                  width: 16,
+                                  height: height,
+                                  decoration: BoxDecoration(
+                                    color: barColor ??
+                                        Theme.of(context).colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  item.label,
+                                  style: Theme.of(context)
+                                      .textTheme.bodySmall
+                                      ?.copyWith(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w500,
+                                        color: Theme.of(context)
+                                            .colorScheme.onSurface,
+                                      ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      const SizedBox(height: 2),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 800),
-                        width: 16,
-                        height: height,
-                        decoration: BoxDecoration(
-                          color:
-                              barColor ?? Theme.of(context).colorScheme.primary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
+              );
+            },
           ),
         ],
       ),
@@ -253,67 +349,176 @@ class SimpleLineChart extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 200,
-            child: CustomPaint(
-              painter: LineChartPainter(
-                data: data,
-                max: max,
-                min: min,
-                range: range,
-                lineColor: lineColor ?? Theme.of(context).colorScheme.primary,
-                fillColor:
-                    fillColor ??
-                    (lineColor ?? Theme.of(context).colorScheme.primary)
-                        .withOpacity(0.1),
-              ),
-              child: Container(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Month labels and values
-          Column(
-            children: [
-              // Value labels above month labels
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: data.map((item) {
-                  final formattedValue = _formatChartValue(item.value);
-                  return Expanded(
-                    child: Text(
-                      formattedValue,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 4),
-              // Month labels
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: data.map((item) {
-                  return Expanded(
-                    child: Text(
-                      item.label,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 10,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final chartHeight = ResponsiveHelper.getChartHeight(
+                context,
+                baseHeight: 200,
+              );
+              final isSmallScreen = ResponsiveHelper.isMobile(context);
+              
+              return Column(
+                children: [
+                  SizedBox(
+                    height: chartHeight,
+                    child: isSmallScreen && data.length > 6
+                        ? SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: SizedBox(
+                              width: (data.length * 60).toDouble().clamp(
+                                constraints.maxWidth,
+                                double.infinity,
+                              ),
+                              height: chartHeight,
+                              child: CustomPaint(
+                                painter: LineChartPainter(
+                                  data: data,
+                                  max: max,
+                                  min: min,
+                                  range: range,
+                                  lineColor: lineColor ??
+                                      Theme.of(context).colorScheme.primary,
+                                  fillColor: fillColor ??
+                                      (lineColor ??
+                                              Theme.of(context)
+                                                  .colorScheme.primary)
+                                          .withOpacity(0.1),
+                                ),
+                                child: Container(),
+                              ),
+                            ),
+                          )
+                        : CustomPaint(
+                            painter: LineChartPainter(
+                              data: data,
+                              max: max,
+                              min: min,
+                              range: range,
+                              lineColor: lineColor ??
+                                  Theme.of(context).colorScheme.primary,
+                              fillColor: fillColor ??
+                                  (lineColor ??
+                                          Theme.of(context).colorScheme.primary)
+                                      .withOpacity(0.1),
+                            ),
+                            child: Container(),
+                          ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Month labels and values
+                  isSmallScreen && data.length > 6
+                      ? SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SizedBox(
+                            width: (data.length * 60).toDouble().clamp(
+                              constraints.maxWidth,
+                              double.infinity,
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: data.map((item) {
+                                    final formattedValue =
+                                        _formatChartValue(item.value);
+                                    return SizedBox(
+                                      width: 50,
+                                      child: Text(
+                                        formattedValue,
+                                        style: Theme.of(context)
+                                            .textTheme.bodySmall
+                                            ?.copyWith(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: Theme.of(context)
+                                                  .colorScheme.primary,
+                                            ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: data.map((item) {
+                                    return SizedBox(
+                                      width: 50,
+                                      child: Text(
+                                        item.label,
+                                        style: Theme.of(context)
+                                            .textTheme.bodySmall
+                                            ?.copyWith(
+                                              fontSize: 10,
+                                              color: Theme.of(context)
+                                                  .colorScheme.onSurfaceVariant,
+                                            ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: data.map((item) {
+                                final formattedValue =
+                                    _formatChartValue(item.value);
+                                return Expanded(
+                                  child: Text(
+                                    formattedValue,
+                                    style: Theme.of(context)
+                                        .textTheme.bodySmall
+                                        ?.copyWith(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context)
+                                              .colorScheme.primary,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: data.map((item) {
+                                return Expanded(
+                                  child: Text(
+                                    item.label,
+                                    style: Theme.of(context)
+                                        .textTheme.bodySmall
+                                        ?.copyWith(
+                                          fontSize: 10,
+                                          color: Theme.of(context)
+                                              .colorScheme.onSurfaceVariant,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -429,9 +634,14 @@ class SimplePieChart extends StatelessWidget {
       Colors.green,
       Colors.purple,
     ];
+    final responsiveSize = ResponsiveHelper.getPieChartSize(
+      context,
+      baseSize: size,
+    );
+    final isMobile = ResponsiveHelper.isMobile(context);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: ResponsiveHelper.getPadding(context),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
@@ -448,67 +658,139 @@ class SimplePieChart extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.onSurface,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              SizedBox(
-                width: size,
-                height: size,
-                child: CustomPaint(painter: PieChartPainter(data, colors)),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: data.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final item = entry.value;
-                    final percentage = (item.value / total) * 100;
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: colors[index % colors.length],
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              item.label,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                  ),
-                            ),
-                          ),
-                          Text(
-                            '${percentage.toStringAsFixed(0)}%',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface,
-                                ),
-                          ),
-                        ],
+          isMobile
+              ? Column(
+                  children: [
+                    SizedBox(
+                      width: responsiveSize,
+                      height: responsiveSize,
+                      child: CustomPaint(
+                        painter: PieChartPainter(data, colors),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: data.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final item = entry.value;
+                        final percentage = (item.value / total) * 100;
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: colors[index % colors.length],
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  item.label,
+                                  style: Theme.of(context)
+                                      .textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Text(
+                                '${percentage.toStringAsFixed(0)}%',
+                                style: Theme.of(context)
+                                    .textTheme.bodySmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    SizedBox(
+                      width: responsiveSize,
+                      height: responsiveSize,
+                      child: CustomPaint(
+                        painter: PieChartPainter(data, colors),
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: data.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final item = entry.value;
+                          final percentage = (item.value / total) * 100;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: colors[index % colors.length],
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    item.label,
+                                    style: Theme.of(context)
+                                        .textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Text(
+                                  '${percentage.toStringAsFixed(0)}%',
+                                  style: Theme.of(context)
+                                      .textTheme.bodySmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
         ],
       ),
     );

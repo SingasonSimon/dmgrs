@@ -7,6 +7,7 @@ import '../../widgets/simple_chart.dart';
 import '../../widgets/modern_card.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
+import '../../utils/responsive.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
 
@@ -148,14 +149,22 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
           ),
         ),
         const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.5,
-          children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = ResponsiveHelper.getGridColumns(
+              context,
+              maxColumns: 2,
+            );
+            final spacing = ResponsiveHelper.getSpacing(context);
+            
+            return GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+              childAspectRatio: ResponsiveHelper.isMobile(context) ? 1.3 : 1.5,
+              children: [
             ModernCard(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -260,7 +269,9 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
                 ],
               ),
             ),
-          ],
+              ],
+            );
+          },
         ),
       ],
     );
@@ -353,70 +364,129 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildIndicator(
-                  'Loan Completion Rate',
-                  '${completionRate.toStringAsFixed(1)}%',
-                  Icons.trending_up,
-                  completionRate >= 70 ? Colors.green : Colors.orange,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildIndicator(
-                  'Average Contribution',
-                  AppHelpers.formatCurrency(averageContribution),
-                  Icons.payments,
-                  Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildIndicator(
-                  'Total Members',
-                  '$memberCount',
-                  Icons.people,
-                  Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildIndicator(
-                  'Active Loans',
-                  '$activeLoans',
-                  Icons.account_balance,
-                  Colors.orange,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildIndicator(
-                  'Lending Pool Balance',
-                  AppHelpers.formatCurrency(lendingPoolBalance),
-                  Icons.account_balance_wallet,
-                  Colors.purple,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildIndicator(
-                  'Fund Utilization',
-                  '${((totalLoans / (totalContributions > 0 ? totalContributions : 1)) * 100).toStringAsFixed(1)}%',
-                  Icons.trending_up,
-                  Colors.teal,
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = ResponsiveHelper.isMobile(context);
+              final spacing = ResponsiveHelper.getSpacing(context);
+              
+              if (isMobile) {
+                return Column(
+                  children: [
+                    _buildIndicator(
+                      'Loan Completion Rate',
+                      '${completionRate.toStringAsFixed(1)}%',
+                      Icons.trending_up,
+                      completionRate >= 70 ? Colors.green : Colors.orange,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildIndicator(
+                      'Average Contribution',
+                      AppHelpers.formatCurrency(averageContribution),
+                      Icons.payments,
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildIndicator(
+                      'Total Members',
+                      '$memberCount',
+                      Icons.people,
+                      Colors.blue,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildIndicator(
+                      'Active Loans',
+                      '$activeLoans',
+                      Icons.account_balance,
+                      Colors.orange,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildIndicator(
+                      'Lending Pool Balance',
+                      AppHelpers.formatCurrency(lendingPoolBalance),
+                      Icons.account_balance_wallet,
+                      Colors.purple,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildIndicator(
+                      'Fund Utilization',
+                      '${((totalLoans / (totalContributions > 0 ? totalContributions : 1)) * 100).toStringAsFixed(1)}%',
+                      Icons.trending_up,
+                      Colors.teal,
+                    ),
+                  ],
+                );
+              }
+              
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildIndicator(
+                          'Loan Completion Rate',
+                          '${completionRate.toStringAsFixed(1)}%',
+                          Icons.trending_up,
+                          completionRate >= 70 ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                      SizedBox(width: spacing),
+                      Expanded(
+                        child: _buildIndicator(
+                          'Average Contribution',
+                          AppHelpers.formatCurrency(averageContribution),
+                          Icons.payments,
+                          Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: spacing),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildIndicator(
+                          'Total Members',
+                          '$memberCount',
+                          Icons.people,
+                          Colors.blue,
+                        ),
+                      ),
+                      SizedBox(width: spacing),
+                      Expanded(
+                        child: _buildIndicator(
+                          'Active Loans',
+                          '$activeLoans',
+                          Icons.account_balance,
+                          Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: spacing),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildIndicator(
+                          'Lending Pool Balance',
+                          AppHelpers.formatCurrency(lendingPoolBalance),
+                          Icons.account_balance_wallet,
+                          Colors.purple,
+                        ),
+                      ),
+                      SizedBox(width: spacing),
+                      Expanded(
+                        child: _buildIndicator(
+                          'Fund Utilization',
+                          '${((totalLoans / (totalContributions > 0 ? totalContributions : 1)) * 100).toStringAsFixed(1)}%',
+                          Icons.trending_up,
+                          Colors.teal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -801,44 +871,85 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSummaryItem(
-                  'Total Loans',
-                  AppHelpers.formatCurrency(totalLoans),
-                  Icons.account_balance,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildSummaryItem(
-                  'Active Loans',
-                  AppHelpers.formatCurrency(activeLoans),
-                  Icons.trending_up,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSummaryItem(
-                  'Completed Loans',
-                  AppHelpers.formatCurrency(completedLoans),
-                  Icons.check_circle,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildSummaryItem(
-                  'Total Count',
-                  '${loanProvider.loans.length}',
-                  Icons.numbers,
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = ResponsiveHelper.isMobile(context);
+              final spacing = ResponsiveHelper.getSpacing(context);
+              
+              if (isMobile) {
+                return Column(
+                  children: [
+                    _buildSummaryItem(
+                      'Total Loans',
+                      AppHelpers.formatCurrency(totalLoans),
+                      Icons.account_balance,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildSummaryItem(
+                      'Active Loans',
+                      AppHelpers.formatCurrency(activeLoans),
+                      Icons.trending_up,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildSummaryItem(
+                      'Completed Loans',
+                      AppHelpers.formatCurrency(completedLoans),
+                      Icons.check_circle,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildSummaryItem(
+                      'Total Count',
+                      '${loanProvider.loans.length}',
+                      Icons.numbers,
+                    ),
+                  ],
+                );
+              }
+              
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildSummaryItem(
+                          'Total Loans',
+                          AppHelpers.formatCurrency(totalLoans),
+                          Icons.account_balance,
+                        ),
+                      ),
+                      SizedBox(width: spacing),
+                      Expanded(
+                        child: _buildSummaryItem(
+                          'Active Loans',
+                          AppHelpers.formatCurrency(activeLoans),
+                          Icons.trending_up,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: spacing),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildSummaryItem(
+                          'Completed Loans',
+                          AppHelpers.formatCurrency(completedLoans),
+                          Icons.check_circle,
+                        ),
+                      ),
+                      SizedBox(width: spacing),
+                      Expanded(
+                        child: _buildSummaryItem(
+                          'Total Count',
+                          '${loanProvider.loans.length}',
+                          Icons.numbers,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -962,14 +1073,22 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             ),
           ),
           const SizedBox(height: 16),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1.5,
-            children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final crossAxisCount = ResponsiveHelper.getGridColumns(
+                context,
+                maxColumns: 2,
+              );
+              final spacing = ResponsiveHelper.getSpacing(context);
+              
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+                childAspectRatio: ResponsiveHelper.isMobile(context) ? 1.3 : 1.5,
+                children: [
               _buildFinancialItem(
                 'Completed Contributions',
                 AppHelpers.formatCurrency(totalContributions),
@@ -994,7 +1113,9 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
                 Icons.account_balance_wallet,
                 availableFunds >= 0 ? Colors.purple : Colors.red,
               ),
-            ],
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -1082,48 +1203,93 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildIndicator(
-                  'ROI',
-                  '${roi.toStringAsFixed(2)}%',
-                  Icons.trending_up,
-                  roi > 5 ? Colors.green : Colors.orange,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildIndicator(
-                  'Avg Interest Rate',
-                  '${averageInterestRate.toStringAsFixed(2)}%',
-                  Icons.percent,
-                  averageInterestRate > 10 ? Colors.green : Colors.blue,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildIndicator(
-                  'Total Interest',
-                  AppHelpers.formatCurrency(totalInterest),
-                  Icons.account_balance_wallet,
-                  Colors.purple,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildIndicator(
-                  'Completed Loans',
-                  '${completedLoans.length}',
-                  Icons.check_circle,
-                  Colors.green,
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = ResponsiveHelper.isMobile(context);
+              final spacing = ResponsiveHelper.getSpacing(context);
+              
+              if (isMobile) {
+                return Column(
+                  children: [
+                    _buildIndicator(
+                      'ROI',
+                      '${roi.toStringAsFixed(2)}%',
+                      Icons.trending_up,
+                      roi > 5 ? Colors.green : Colors.orange,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildIndicator(
+                      'Avg Interest Rate',
+                      '${averageInterestRate.toStringAsFixed(2)}%',
+                      Icons.percent,
+                      averageInterestRate > 10 ? Colors.green : Colors.blue,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildIndicator(
+                      'Total Interest',
+                      AppHelpers.formatCurrency(totalInterest),
+                      Icons.account_balance_wallet,
+                      Colors.purple,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildIndicator(
+                      'Completed Loans',
+                      '${completedLoans.length}',
+                      Icons.check_circle,
+                      Colors.green,
+                    ),
+                  ],
+                );
+              }
+              
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildIndicator(
+                          'ROI',
+                          '${roi.toStringAsFixed(2)}%',
+                          Icons.trending_up,
+                          roi > 5 ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                      SizedBox(width: spacing),
+                      Expanded(
+                        child: _buildIndicator(
+                          'Avg Interest Rate',
+                          '${averageInterestRate.toStringAsFixed(2)}%',
+                          Icons.percent,
+                          averageInterestRate > 10 ? Colors.green : Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: spacing),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildIndicator(
+                          'Total Interest',
+                          AppHelpers.formatCurrency(totalInterest),
+                          Icons.account_balance_wallet,
+                          Colors.purple,
+                        ),
+                      ),
+                      SizedBox(width: spacing),
+                      Expanded(
+                        child: _buildIndicator(
+                          'Completed Loans',
+                          '${completedLoans.length}',
+                          Icons.check_circle,
+                          Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -1198,48 +1364,93 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildIndicator(
-                  'Monthly Income',
-                  AppHelpers.formatCurrency(projectedMonthlyIncome),
-                  Icons.calendar_month,
-                  Colors.green,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildIndicator(
-                  'Monthly Outflow',
-                  AppHelpers.formatCurrency(projectedMonthlyOutflow),
-                  Icons.trending_down,
-                  Colors.red,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildIndicator(
-                  'Net Cash Flow',
-                  AppHelpers.formatCurrency(projectedNetCashFlow),
-                  Icons.account_balance,
-                  projectedNetCashFlow >= 0 ? Colors.green : Colors.red,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildIndicator(
-                  'Yearly Projection',
-                  AppHelpers.formatCurrency(projectedYearlyIncome),
-                  Icons.calendar_today,
-                  Colors.blue,
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = ResponsiveHelper.isMobile(context);
+              final spacing = ResponsiveHelper.getSpacing(context);
+              
+              if (isMobile) {
+                return Column(
+                  children: [
+                    _buildIndicator(
+                      'Monthly Income',
+                      AppHelpers.formatCurrency(projectedMonthlyIncome),
+                      Icons.calendar_month,
+                      Colors.green,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildIndicator(
+                      'Monthly Outflow',
+                      AppHelpers.formatCurrency(projectedMonthlyOutflow),
+                      Icons.trending_down,
+                      Colors.red,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildIndicator(
+                      'Net Cash Flow',
+                      AppHelpers.formatCurrency(projectedNetCashFlow),
+                      Icons.account_balance,
+                      projectedNetCashFlow >= 0 ? Colors.green : Colors.red,
+                    ),
+                    SizedBox(height: spacing),
+                    _buildIndicator(
+                      'Yearly Projection',
+                      AppHelpers.formatCurrency(projectedYearlyIncome),
+                      Icons.calendar_today,
+                      Colors.blue,
+                    ),
+                  ],
+                );
+              }
+              
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildIndicator(
+                          'Monthly Income',
+                          AppHelpers.formatCurrency(projectedMonthlyIncome),
+                          Icons.calendar_month,
+                          Colors.green,
+                        ),
+                      ),
+                      SizedBox(width: spacing),
+                      Expanded(
+                        child: _buildIndicator(
+                          'Monthly Outflow',
+                          AppHelpers.formatCurrency(projectedMonthlyOutflow),
+                          Icons.trending_down,
+                          Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: spacing),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildIndicator(
+                          'Net Cash Flow',
+                          AppHelpers.formatCurrency(projectedNetCashFlow),
+                          Icons.account_balance,
+                          projectedNetCashFlow >= 0 ? Colors.green : Colors.red,
+                        ),
+                      ),
+                      SizedBox(width: spacing),
+                      Expanded(
+                        child: _buildIndicator(
+                          'Yearly Projection',
+                          AppHelpers.formatCurrency(projectedYearlyIncome),
+                          Icons.calendar_today,
+                          Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/contribution_provider.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
+import '../../utils/responsive.dart';
 
 class ContributionScreen extends StatefulWidget {
   const ContributionScreen({super.key});
@@ -277,22 +278,51 @@ class _ContributionScreenState extends State<ContributionScreen> {
             ],
             if (contribution.isPending) ...[
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _retryPayment(contribution),
-                      child: const Text('Retry Payment'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => _simulatePayment(contribution),
-                      child: const Text('Simulate Payment'),
-                    ),
-                  ),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = ResponsiveHelper.isMobile(context);
+                  final spacing = ResponsiveHelper.getSpacing(context);
+                  
+                  if (isMobile) {
+                    return Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => _retryPayment(contribution),
+                            child: const Text('Retry Payment'),
+                          ),
+                        ),
+                        SizedBox(height: spacing),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () => _simulatePayment(contribution),
+                            child: const Text('Simulate Payment'),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                  
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _retryPayment(contribution),
+                          child: const Text('Retry Payment'),
+                        ),
+                      ),
+                      SizedBox(width: spacing),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _simulatePayment(contribution),
+                          child: const Text('Simulate Payment'),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ],
@@ -573,62 +603,69 @@ class _MakeContributionDialogState extends State<_MakeContributionDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Make Contribution'),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Monthly Contribution: ${AppHelpers.formatCurrency(AppConstants.monthlyContribution)}',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Phone Number',
-                hintText: 'e.g., 0712345678',
-                prefixIcon: Icon(Icons.phone),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Phone number is required';
-                }
-                if (!AppHelpers.isValidPhoneNumber(value)) {
-                  return 'Please enter a valid Kenyan phone number';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 20,
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: ResponsiveHelper.getDialogHeight(context, maxHeight: 500),
+        ),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Monthly Contribution: ${AppHelpers.formatCurrency(AppConstants.monthlyContribution)}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    hintText: 'e.g., 0712345678',
+                    prefixIcon: Icon(Icons.phone),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'You will receive an M-Pesa STK Push prompt on your phone to complete the payment.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Phone number is required';
+                    }
+                    if (!AppHelpers.isValidPhoneNumber(value)) {
+                      return 'Please enter a valid Kenyan phone number';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'You will receive an M-Pesa STK Push prompt on your phone to complete the payment.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       actions: [
@@ -722,62 +759,69 @@ class _RetryPaymentDialogState extends State<_RetryPaymentDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Retry Payment'),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Amount: ${AppHelpers.formatCurrency(widget.contribution.amount)}',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Phone Number',
-                hintText: 'e.g., 0712345678',
-                prefixIcon: Icon(Icons.phone),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Phone number is required';
-                }
-                if (!AppHelpers.isValidPhoneNumber(value)) {
-                  return 'Please enter a valid Kenyan phone number';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 20,
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: ResponsiveHelper.getDialogHeight(context, maxHeight: 500),
+        ),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Amount: ${AppHelpers.formatCurrency(widget.contribution.amount)}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    hintText: 'e.g., 0712345678',
+                    prefixIcon: Icon(Icons.phone),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'You will receive an M-Pesa STK Push prompt on your phone to complete the payment.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Phone number is required';
+                    }
+                    if (!AppHelpers.isValidPhoneNumber(value)) {
+                      return 'Please enter a valid Kenyan phone number';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'You will receive an M-Pesa STK Push prompt on your phone to complete the payment.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       actions: [
@@ -840,11 +884,15 @@ class _FilterDialogState extends State<_FilterDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Filter Contributions'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: ResponsiveHelper.getDialogHeight(context, maxHeight: 600),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Status Filter
             Text(
               'Status',
@@ -928,6 +976,7 @@ class _FilterDialogState extends State<_FilterDialog> {
               },
             ),
           ],
+        ),
         ),
       ),
       actions: [

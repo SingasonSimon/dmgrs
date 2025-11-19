@@ -5,6 +5,7 @@ import '../../providers/contribution_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../utils/helpers.dart';
 import '../../utils/constants.dart';
+import '../../utils/responsive.dart';
 import '../../widgets/modern_bottom_nav.dart';
 import '../../widgets/modern_card.dart';
 import '../../widgets/modern_navigation_drawer.dart';
@@ -410,28 +411,53 @@ class _DashboardTab extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildFinancialItem(
-                        context,
-                        'Total Contributed',
-                        AppHelpers.formatCurrency(totalContributed),
-                        Colors.green,
-                        Icons.trending_up,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildFinancialItem(
-                        context,
-                        'Outstanding Loans',
-                        AppHelpers.formatCurrency(totalOutstanding),
-                        Colors.red,
-                        Icons.account_balance,
-                      ),
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (ResponsiveHelper.isMobile(context)) {
+                      return Column(
+                        children: [
+                          _buildFinancialItem(
+                            context,
+                            'Total Contributed',
+                            AppHelpers.formatCurrency(totalContributed),
+                            Colors.green,
+                            Icons.trending_up,
+                          ),
+                          SizedBox(height: ResponsiveHelper.getSpacing(context)),
+                          _buildFinancialItem(
+                            context,
+                            'Outstanding Loans',
+                            AppHelpers.formatCurrency(totalOutstanding),
+                            Colors.red,
+                            Icons.account_balance,
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _buildFinancialItem(
+                            context,
+                            'Total Contributed',
+                            AppHelpers.formatCurrency(totalContributed),
+                            Colors.green,
+                            Icons.trending_up,
+                          ),
+                        ),
+                        SizedBox(width: ResponsiveHelper.getSpacing(context)),
+                        Expanded(
+                          child: _buildFinancialItem(
+                            context,
+                            'Outstanding Loans',
+                            AppHelpers.formatCurrency(totalOutstanding),
+                            Colors.red,
+                            Icons.account_balance,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 Container(
@@ -548,68 +574,125 @@ class _DashboardTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                context,
-                'Make Payment',
-                'Pay monthly contribution',
-                Icons.payment,
-                Colors.blue,
-                () {
-                  // Navigate to payments tab
-                  onTabTapped(1);
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                context,
-                'Request Loan',
-                'Apply for a loan',
-                Icons.account_balance,
-                Colors.green,
-                () {
-                  // Navigate to loans tab
-                  onTabTapped(2);
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                context,
-                'View Allocations',
-                'Check fund distributions',
-                Icons.rotate_right,
-                Colors.orange,
-                () {
-                  // Navigate to payments tab, allocations section
-                  onTabTapped(1);
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                context,
-                'Profile',
-                'Manage your account',
-                Icons.person,
-                Colors.purple,
-                () {
-                  // Navigate to profile tab
-                  onTabTapped(3);
-                },
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final spacing = ResponsiveHelper.getSpacing(context);
+            final isMobile = ResponsiveHelper.isMobile(context);
+            
+            if (isMobile) {
+              return Column(
+                children: [
+                  _buildActionCard(
+                    context,
+                    'Make Payment',
+                    'Pay monthly contribution',
+                    Icons.payment,
+                    Colors.blue,
+                    () {
+                      onTabTapped(1);
+                    },
+                  ),
+                  SizedBox(height: spacing),
+                  _buildActionCard(
+                    context,
+                    'Request Loan',
+                    'Apply for a loan',
+                    Icons.account_balance,
+                    Colors.green,
+                    () {
+                      onTabTapped(2);
+                    },
+                  ),
+                  SizedBox(height: spacing),
+                  _buildActionCard(
+                    context,
+                    'View Allocations',
+                    'Check fund distributions',
+                    Icons.rotate_right,
+                    Colors.orange,
+                    () {
+                      onTabTapped(1);
+                    },
+                  ),
+                  SizedBox(height: spacing),
+                  _buildActionCard(
+                    context,
+                    'Profile',
+                    'Manage your account',
+                    Icons.person,
+                    Colors.purple,
+                    () {
+                      onTabTapped(3);
+                    },
+                  ),
+                ],
+              );
+            }
+            
+            return Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildActionCard(
+                        context,
+                        'Make Payment',
+                        'Pay monthly contribution',
+                        Icons.payment,
+                        Colors.blue,
+                        () {
+                          onTabTapped(1);
+                        },
+                      ),
+                    ),
+                    SizedBox(width: spacing),
+                    Expanded(
+                      child: _buildActionCard(
+                        context,
+                        'Request Loan',
+                        'Apply for a loan',
+                        Icons.account_balance,
+                        Colors.green,
+                        () {
+                          onTabTapped(2);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: spacing),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildActionCard(
+                        context,
+                        'View Allocations',
+                        'Check fund distributions',
+                        Icons.rotate_right,
+                        Colors.orange,
+                        () {
+                          onTabTapped(1);
+                        },
+                      ),
+                    ),
+                    SizedBox(width: spacing),
+                    Expanded(
+                      child: _buildActionCard(
+                        context,
+                        'Profile',
+                        'Manage your account',
+                        Icons.person,
+                        Colors.purple,
+                        () {
+                          onTabTapped(3);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
@@ -666,15 +749,17 @@ class _DashboardTab extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  height: 1.3,
+              Flexible(
+                child: Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    height: 1.3,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -715,31 +800,63 @@ class _DashboardTab extends StatelessWidget {
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildProgressCard(
-                    context,
-                    'Contribution Streak',
-                    hasContributedThisMonth ? 'Current Month ✓' : 'Pending',
-                    hasContributedThisMonth ? Colors.green : Colors.orange,
-                    Icons.calendar_today,
-                    hasContributedThisMonth ? 1.0 : 0.0,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildProgressCard(
-                    context,
-                    'Loans Completed',
-                    '${completedLoans.length} loans',
-                    Colors.blue,
-                    Icons.done_all,
-                    completedLoans.length /
-                        (completedLoans.length + activeLoans.length + 1),
-                  ),
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final spacing = ResponsiveHelper.getSpacing(context);
+                final isMobile = ResponsiveHelper.isMobile(context);
+                
+                if (isMobile) {
+                  return Column(
+                    children: [
+                      _buildProgressCard(
+                        context,
+                        'Contribution Streak',
+                        hasContributedThisMonth ? 'Current Month ✓' : 'Pending',
+                        hasContributedThisMonth ? Colors.green : Colors.orange,
+                        Icons.calendar_today,
+                        hasContributedThisMonth ? 1.0 : 0.0,
+                      ),
+                      SizedBox(height: spacing),
+                      _buildProgressCard(
+                        context,
+                        'Loans Completed',
+                        '${completedLoans.length} loans',
+                        Colors.blue,
+                        Icons.done_all,
+                        completedLoans.length /
+                            (completedLoans.length + activeLoans.length + 1),
+                      ),
+                    ],
+                  );
+                }
+                
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _buildProgressCard(
+                        context,
+                        'Contribution Streak',
+                        hasContributedThisMonth ? 'Current Month ✓' : 'Pending',
+                        hasContributedThisMonth ? Colors.green : Colors.orange,
+                        Icons.calendar_today,
+                        hasContributedThisMonth ? 1.0 : 0.0,
+                      ),
+                    ),
+                    SizedBox(width: spacing),
+                    Expanded(
+                      child: _buildProgressCard(
+                        context,
+                        'Loans Completed',
+                        '${completedLoans.length} loans',
+                        Colors.blue,
+                        Icons.done_all,
+                        completedLoans.length /
+                            (completedLoans.length + activeLoans.length + 1),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         );
@@ -814,45 +931,55 @@ class _DashboardTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.5,
-              children: [
-                StatCard(
-                  title: 'Monthly Contribution',
-                  value: AppHelpers.formatCurrency(
-                    AppConstants.monthlyContribution,
-                  ),
-                  icon: Icons.payment,
-                  iconColor: Colors.blue,
-                ),
-                StatCard(
-                  title: 'Active Loans',
-                  value: '${loanStats['activeLoans']}',
-                  icon: Icons.account_balance,
-                  iconColor: Colors.green,
-                ),
-                StatCard(
-                  title: 'Total Contributed',
-                  value: AppHelpers.formatCurrency(
-                    contributionStats['totalAmount'],
-                  ),
-                  icon: Icons.trending_up,
-                  iconColor: Colors.orange,
-                ),
-                StatCard(
-                  title: 'Outstanding Loans',
-                  value: AppHelpers.formatCurrency(
-                    loanStats['totalOutstanding'],
-                  ),
-                  icon: Icons.warning,
-                  iconColor: Colors.red,
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final crossAxisCount = ResponsiveHelper.getGridColumns(
+                  context,
+                  maxColumns: 2,
+                );
+                final spacing = ResponsiveHelper.getSpacing(context);
+                
+                return GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: spacing,
+                  mainAxisSpacing: spacing,
+                  childAspectRatio: ResponsiveHelper.isMobile(context) ? 1.3 : 1.5,
+                  children: [
+                    StatCard(
+                      title: 'Monthly Contribution',
+                      value: AppHelpers.formatCurrency(
+                        AppConstants.monthlyContribution,
+                      ),
+                      icon: Icons.payment,
+                      iconColor: Colors.blue,
+                    ),
+                    StatCard(
+                      title: 'Active Loans',
+                      value: '${loanStats['activeLoans']}',
+                      icon: Icons.account_balance,
+                      iconColor: Colors.green,
+                    ),
+                    StatCard(
+                      title: 'Total Contributed',
+                      value: AppHelpers.formatCurrency(
+                        contributionStats['totalAmount'],
+                      ),
+                      icon: Icons.trending_up,
+                      iconColor: Colors.orange,
+                    ),
+                    StatCard(
+                      title: 'Outstanding Loans',
+                      value: AppHelpers.formatCurrency(
+                        loanStats['totalOutstanding'],
+                      ),
+                      icon: Icons.warning,
+                      iconColor: Colors.red,
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         );
@@ -1051,7 +1178,7 @@ class _DashboardTab extends StatelessWidget {
         ),
         subtitle: Text(
           loan.purpose,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
         trailing: Column(

@@ -30,7 +30,7 @@ class _FundAllocationScreenState extends State<FundAllocationScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedGroupId,
+                initialValue: _selectedGroupId,
                 decoration: const InputDecoration(
                   labelText: 'Group (soon)',
                   border: OutlineInputBorder(),
