@@ -74,34 +74,36 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) {
-          // If on dashboard (index 0), allow back navigation to exit app
-          if (_currentIndex == 0) {
-            // Show exit confirmation dialog
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Exit App'),
-                content: const Text('Do you want to exit the app?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      SystemNavigator.pop();
-                    },
-                    child: const Text('Exit'),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            // Navigate back to dashboard
+      canPop: _currentIndex == 0 ? false : true,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        
+        // If on dashboard (index 0), show exit confirmation dialog
+        if (_currentIndex == 0) {
+          final shouldExit = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Exit App'),
+              content: const Text('Do you want to exit the app?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Exit'),
+                ),
+              ],
+            ),
+          );
+          
+          if (shouldExit == true && mounted) {
+            SystemNavigator.pop();
+          }
+        } else {
+          // Navigate back to dashboard
+          if (mounted) {
             _onTabTapped(0);
           }
         }
@@ -132,10 +134,12 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
         drawer: ModernNavigationDrawer(
           isAdmin: false,
           onNavigationTap: (index) {
+            // Close drawer first
+            Navigator.of(context).pop();
             // Validate index before navigation
             if (index >= 0 && index < 6 && mounted) {
               // Use a small delay to ensure drawer is closed
-              Future.delayed(const Duration(milliseconds: 100), () {
+              Future.delayed(const Duration(milliseconds: 150), () {
                 if (mounted && _pageController.hasClients) {
                   setState(() {
                     _currentIndex = index;
@@ -245,39 +249,50 @@ class _PaymentsTab extends StatelessWidget {
   }
 }
 
-class _DashboardTab extends StatelessWidget {
+class _DashboardTab extends StatefulWidget {
   final Function(int) onTabTapped;
 
   const _DashboardTab({required this.onTabTapped});
 
   @override
+  State<_DashboardTab> createState() => _DashboardTabState();
+}
+
+class _DashboardTabState extends State<_DashboardTab> {
+  @override
+  void initState() {
+    super.initState();
+    // Load data when dashboard is first shown
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  Future<void> _loadData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final contributionProvider = Provider.of<ContributionProvider>(
+      context,
+      listen: false,
+    );
+    final loanProvider = Provider.of<LoanProvider>(context, listen: false);
+
+    if (authProvider.isAuthenticated) {
+      await Future.wait([
+        contributionProvider.loadUserContributions(authProvider.userId),
+        loanProvider.loadUserLoans(authProvider.userId),
+      ]);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-        onRefresh: () async {
-          final authProvider = Provider.of<AuthProvider>(
-            context,
-            listen: false,
-          );
-          final contributionProvider = Provider.of<ContributionProvider>(
-            context,
-            listen: false,
-          );
-          final loanProvider = Provider.of<LoanProvider>(
-            context,
-            listen: false,
-          );
-
-          if (authProvider.isAuthenticated) {
-            await Future.wait([
-              contributionProvider.loadUserContributions(authProvider.userId),
-              loanProvider.loadUserLoans(authProvider.userId),
-            ]);
-          }
-        },
+        onRefresh: _loadData,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Welcome Section
               _buildWelcomeSection(context),
@@ -290,7 +305,7 @@ class _DashboardTab extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Quick Actions
-              _buildQuickActions(context),
+              _buildQuickActions(context, widget.onTabTapped),
 
               const SizedBox(height: 24),
 
@@ -300,12 +315,12 @@ class _DashboardTab extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Recent Contributions
-              _buildRecentContributions(context),
+              _buildRecentContributions(context, widget.onTabTapped),
 
               const SizedBox(height: 24),
 
               // Active Loans
-              _buildActiveLoans(context),
+              _buildActiveLoans(context, widget.onTabTapped),
 
               const SizedBox(height: 24),
 
@@ -321,6 +336,7 @@ class _DashboardTab extends StatelessWidget {
         ),
     );
   }
+}
 
   Widget _buildWelcomeSection(BuildContext context) {
     return Consumer<AuthProvider>(
@@ -592,7 +608,7 @@ class _DashboardTab extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildQuickActions(BuildContext context, Function(int) onTabTapped) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -652,7 +668,7 @@ class _DashboardTab extends StatelessWidget {
                     Icons.person,
                     Colors.purple,
                     () {
-                      onTabTapped(3);
+                      onTabTapped(5);
                     },
                   ),
                 ],
@@ -753,6 +769,7 @@ class _DashboardTab extends StatelessWidget {
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
@@ -777,19 +794,19 @@ class _DashboardTab extends StatelessWidget {
                   color: color,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
-              Flexible(
-                child: Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    height: 1.3,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  height: 1.3,
                 ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -1017,7 +1034,7 @@ class _DashboardTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentContributions(BuildContext context) {
+  Widget _buildRecentContributions(BuildContext context, Function(int) onTabTapped) {
     return Consumer<ContributionProvider>(
       builder: (context, contributionProvider, child) {
         final userContributions = contributionProvider.getUserContributions(
@@ -1121,7 +1138,7 @@ class _DashboardTab extends StatelessWidget {
     );
   }
 
-  Widget _buildActiveLoans(BuildContext context) {
+  Widget _buildActiveLoans(BuildContext context, Function(int) onTabTapped) {
     return Consumer<LoanProvider>(
       builder: (context, loanProvider, child) {
         final userLoans = loanProvider.getUserLoans(
@@ -1369,4 +1386,3 @@ class _DashboardTab extends StatelessWidget {
       ],
     );
   }
-}
