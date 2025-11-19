@@ -171,14 +171,18 @@ class AuthProvider with ChangeNotifier {
   Future<void> signOut() async {
     try {
       print('AuthProvider: Starting sign out...');
-      await AuthService.signOut();
+      // Clear state first to prevent any race conditions
       _currentUser = null;
       _isLoading = false;
       _error = null;
-      print('AuthProvider: Sign out successful');
       notifyListeners();
+      
+      // Then sign out from Firebase
+      await AuthService.signOut();
+      print('AuthProvider: Sign out successful');
     } catch (e) {
       print('AuthProvider: Sign out error: $e');
+      // Ensure state is cleared even on error
       _currentUser = null;
       _isLoading = false;
       _error = null;

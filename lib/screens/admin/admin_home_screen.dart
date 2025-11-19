@@ -16,6 +16,7 @@ import '../../widgets/simple_chart.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
 import '../shared/notifications_screen.dart';
+import '../shared/welcome_screen.dart';
 import 'admin_loan_screen.dart';
 import 'admin_allocation_screen.dart';
 import 'admin_reports_screen.dart';
@@ -252,7 +253,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               listen: false,
             );
             await authProvider.signOut();
-            // Navigation will be handled by AuthWrapper listening to AuthProvider
+            
+            // Clear navigation stack and navigate to welcome screen
+            if (mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const WelcomeScreen(),
+                ),
+                (route) => false, // Remove all previous routes
+              );
+            }
           },
         ),
         body: PageView(

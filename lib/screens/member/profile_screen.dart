@@ -409,11 +409,14 @@ class ProfileScreen extends StatelessWidget {
                 listen: false,
               );
               await authProvider.signOut();
-              // Navigation will be handled by AuthWrapper listening to AuthProvider
+              
+              // Clear navigation stack and navigate to welcome screen
               if (context.mounted) {
-                AppHelpers.showSuccessSnackBar(
-                  context,
-                  'Signed out successfully',
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => const WelcomeScreen(),
+                  ),
+                  (route) => false, // Remove all previous routes
                 );
               }
             },

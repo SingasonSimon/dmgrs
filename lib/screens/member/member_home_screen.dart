@@ -11,6 +11,7 @@ import '../../widgets/modern_bottom_nav.dart';
 import '../../widgets/modern_card.dart';
 import '../../widgets/modern_navigation_drawer.dart';
 import '../shared/notifications_screen.dart';
+import '../shared/welcome_screen.dart';
 import 'contribution_screen.dart';
 import 'loan_screen.dart';
 import 'profile_screen.dart';
@@ -161,7 +162,16 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
               listen: false,
             );
             await authProvider.signOut();
-            // Navigation will be handled by AuthWrapper listening to AuthProvider
+            
+            // Clear navigation stack and navigate to welcome screen
+            if (mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const WelcomeScreen(),
+                ),
+                (route) => false, // Remove all previous routes
+              );
+            }
           },
         ),
         body: PageView(
