@@ -87,11 +87,20 @@ class WelcomeScreen extends StatelessWidget {
 
         // Title
         Text(
-          'Digital Merry Go Round',
+          'DMGRS',
           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: Colors.white,
             fontSize: 32,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Digital Merry Go Round System',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Colors.white.withOpacity(0.9),
+            fontSize: 16,
           ),
           textAlign: TextAlign.center,
         ),

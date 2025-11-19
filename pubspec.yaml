@@ -1,5 +1,5 @@
 name: digital_merry_go_round
-description: "Digital Merry Go Round System - A Flutter app for automating Chama group savings and lending operations"
+description: "DMGRS - Digital Merry Go Round System - A Flutter app for automating Chama group savings and lending operations"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev

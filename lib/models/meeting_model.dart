@@ -16,6 +16,8 @@ class MeetingModel {
   final DateTime? startedAt;
   final DateTime? endedAt;
   final String? notes;
+  final bool isArchived;
+  final DateTime? archivedAt;
 
   MeetingModel({
     required this.meetingId,
@@ -33,6 +35,8 @@ class MeetingModel {
     this.startedAt,
     this.endedAt,
     this.notes,
+    this.isArchived = false,
+    this.archivedAt,
   });
 
   // Convert to Map for Firestore
@@ -53,28 +57,42 @@ class MeetingModel {
       'startedAt': startedAt != null ? Timestamp.fromDate(startedAt!) : null,
       'endedAt': endedAt != null ? Timestamp.fromDate(endedAt!) : null,
       'notes': notes,
+      'isArchived': isArchived,
+      'archivedAt': archivedAt != null ? Timestamp.fromDate(archivedAt!) : null,
     };
   }
 
   // Create from Map (from Firestore)
   factory MeetingModel.fromMap(Map<String, dynamic> map) {
+    // Validate required fields
+    final meetingId = map['meetingId']?.toString() ?? '';
+    if (meetingId.isEmpty) {
+      throw Exception('MeetingModel: meetingId is required');
+    }
+    
+    final scheduledDate = (map['scheduledDate'] as Timestamp?)?.toDate();
+    if (scheduledDate == null) {
+      throw Exception('MeetingModel: scheduledDate is required');
+    }
+    
     return MeetingModel(
-      meetingId: map['meetingId'] ?? '',
-      title: map['title'] ?? '',
-      description: map['description'] ?? '',
-      scheduledDate:
-          (map['scheduledDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      organizerId: map['organizerId'] ?? '',
-      organizerName: map['organizerName'] ?? '',
+      meetingId: meetingId,
+      title: map['title']?.toString() ?? '',
+      description: map['description']?.toString() ?? '',
+      scheduledDate: scheduledDate,
+      organizerId: map['organizerId']?.toString() ?? '',
+      organizerName: map['organizerName']?.toString() ?? '',
       attendeeIds: List<String>.from(map['attendeeIds'] ?? []),
-      meetingType: map['meetingType'] ?? 'general',
-      status: map['status'] ?? 'scheduled',
-      googleMeetUrl: map['googleMeetUrl'] ?? '',
+      meetingType: map['meetingType']?.toString() ?? 'general',
+      status: map['status']?.toString() ?? 'scheduled',
+      googleMeetUrl: map['googleMeetUrl']?.toString() ?? '',
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       startedAt: (map['startedAt'] as Timestamp?)?.toDate(),
       endedAt: (map['endedAt'] as Timestamp?)?.toDate(),
-      notes: map['notes'],
+      notes: map['notes']?.toString(),
+      isArchived: map['isArchived'] as bool? ?? false,
+      archivedAt: (map['archivedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -95,6 +113,8 @@ class MeetingModel {
     DateTime? startedAt,
     DateTime? endedAt,
     String? notes,
+    bool? isArchived,
+    DateTime? archivedAt,
   }) {
     return MeetingModel(
       meetingId: meetingId ?? this.meetingId,
@@ -112,6 +132,8 @@ class MeetingModel {
       startedAt: startedAt ?? this.startedAt,
       endedAt: endedAt ?? this.endedAt,
       notes: notes ?? this.notes,
+      isArchived: isArchived ?? this.isArchived,
+      archivedAt: archivedAt ?? this.archivedAt,
     );
   }
 

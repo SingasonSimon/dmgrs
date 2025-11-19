@@ -21,56 +21,56 @@ class ProfileScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Profile'),
           actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfileScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          if (authProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final user = authProvider.currentUser;
-          if (user == null) {
-            return const Center(child: Text('User not found'));
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Column(
-              children: [
-                // Profile Header
-                _buildProfileHeader(context, user),
-
-                const SizedBox(height: 24),
-
-                // Profile Information
-                _buildProfileInfo(context, user),
-
-                const SizedBox(height: 24),
-
-                // Account Actions
-                _buildAccountActions(context),
-
-                const SizedBox(height: 24),
-
-                // App Information
-                _buildAppInfo(context),
-              ],
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EditProfileScreen(),
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
+          ],
+        ),
+        body: Consumer<AuthProvider>(
+          builder: (context, authProvider, child) {
+            if (authProvider.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final user = authProvider.currentUser;
+            if (user == null) {
+              return const Center(child: Text('User not found'));
+            }
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Column(
+                children: [
+                  // Profile Header
+                  _buildProfileHeader(context, user),
+
+                  const SizedBox(height: 24),
+
+                  // Profile Information
+                  _buildProfileInfo(context, user),
+
+                  const SizedBox(height: 24),
+
+                  // Account Actions
+                  _buildAccountActions(context),
+
+                  const SizedBox(height: 24),
+
+                  // App Information
+                  _buildAppInfo(context),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -403,23 +403,17 @@ class ProfileScreen extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () async {
+              Navigator.of(context).pop(); // Close dialog first
               final authProvider = Provider.of<AuthProvider>(
                 context,
                 listen: false,
               );
               await authProvider.signOut();
+              // Navigation will be handled by AuthWrapper listening to AuthProvider
               if (context.mounted) {
                 AppHelpers.showSuccessSnackBar(
                   context,
                   'Signed out successfully',
-                );
-                // Navigate back to welcome screen
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const WelcomeScreen(),
-                  ),
-                  (route) => false,
                 );
               }
             },
@@ -582,8 +576,8 @@ class ProfileScreen extends StatelessWidget {
               ),
               SizedBox(height: 8),
               Text('Contact our support team at:'),
-              Text('Email: support@dmgrs.com'),
-              Text('Phone: +254 700 000 000'),
+              Text('Email: singason65@gmail.com'),
+              Text('Phone: +254 748 088 741'),
             ],
           ),
         ),
@@ -669,7 +663,7 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Icon(Icons.email, size: 20),
                 SizedBox(width: 8),
-                Text('support@dmgrs.com'),
+                Text('singason65@gmail.com'),
               ],
             ),
             const SizedBox(height: 8),
@@ -677,7 +671,7 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Icon(Icons.phone, size: 20),
                 SizedBox(width: 8),
-                Text('+254 700 000 000'),
+                Text('+254 748 088 741'),
               ],
             ),
             const SizedBox(height: 8),
@@ -763,7 +757,7 @@ class ProfileScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Last updated: January 2024',
+                'Last updated: October 2025',
                 style: TextStyle(fontStyle: FontStyle.italic),
               ),
               SizedBox(height: 16),
@@ -818,7 +812,7 @@ class ProfileScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Last updated: January 2024',
+                'Last updated: October 2025',
                 style: TextStyle(fontStyle: FontStyle.italic),
               ),
               SizedBox(height: 16),

@@ -38,8 +38,11 @@ class AuthProvider with ChangeNotifier {
           await _loadUserData(user.uid);
         }
       } else {
+        // User signed out - clear all state
+        print('AuthProvider: User signed out - clearing state');
         _currentUser = null;
-        print('AuthProvider: User signed out');
+        _isLoading = false;
+        _error = null;
         notifyListeners();
       }
     });

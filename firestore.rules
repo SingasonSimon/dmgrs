@@ -86,10 +86,13 @@ service cloud.firestore {
         (resource.data.adminId == request.auth.uid || isAdmin());
     }
     
-    // Meetings - authenticated users can read, admins can create/update/delete
+    // Meetings - authenticated users can read all, admins can create/update/delete
     match /meetings/{meetingId} {
+      // Allow read for all authenticated users (works for both single reads and list queries)
       allow read: if isAuthenticated();
+      // Allow create for all authenticated users
       allow create: if isAuthenticated();
+      // Allow update/delete for organizer or admin
       allow update, delete: if isAuthenticated() && 
         (resource.data.organizerId == request.auth.uid || isAdmin());
     }

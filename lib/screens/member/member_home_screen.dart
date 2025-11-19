@@ -106,61 +106,25 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
         }
       },
       child: Scaffold(
-        body: Column(
-          children: [
-            // Custom header with menu and notifications
-            Container(
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 8,
-                left: 16,
-                right: 16,
-                bottom: 8,
-              ),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                border: Border(
-                  bottom: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withOpacity(0.1),
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+        appBar: AppBar(
+          title: Text(_getAppBarTitle()),
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openDrawer(),
             ),
-            // Page content
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                },
-                children: [
-                  _DashboardTab(onTabTapped: _onTabTapped),
-                  const _PaymentsTab(),
-                  const LoanScreen(),
-                  const FundAllocationScreen(),
-                  const MeetingsScreen(),
-                  const ProfileScreen(),
-                ],
-              ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -191,12 +155,30 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
             );
           },
           onLogoutTap: () async {
+            Navigator.of(context).pop(); // Close drawer first
             final authProvider = Provider.of<AuthProvider>(
               context,
               listen: false,
             );
             await authProvider.signOut();
+            // Navigation will be handled by AuthWrapper listening to AuthProvider
           },
+        ),
+        body: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          children: [
+            _DashboardTab(onTabTapped: _onTabTapped),
+            const _PaymentsTab(),
+            const LoanScreen(),
+            const FundAllocationScreen(),
+            const MeetingsScreen(),
+            const ProfileScreen(),
+          ],
         ),
         bottomNavigationBar: ModernBottomNav(
           currentIndex: _currentIndex,
@@ -205,6 +187,25 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
         ),
       ),
     );
+  }
+
+  String _getAppBarTitle() {
+    switch (_currentIndex) {
+      case 0:
+        return 'Dashboard';
+      case 1:
+        return 'Payments';
+      case 2:
+        return 'Loans';
+      case 3:
+        return 'Allocations';
+      case 4:
+        return 'Meetings';
+      case 5:
+        return 'Profile';
+      default:
+        return 'DMGRS';
+    }
   }
 }
 
@@ -215,25 +216,20 @@ class _PaymentsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Payments'),
-          leading: Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-            ),
-          ),
-          bottom: const TabBar(
+      child: Column(
+        children: [
+          const TabBar(
             tabs: [
               Tab(text: 'Contributions', icon: Icon(Icons.payment)),
               Tab(text: 'Allocations', icon: Icon(Icons.rotate_right)),
             ],
           ),
-        ),
-        body: const TabBarView(
-          children: [ContributionScreen(), FundAllocationScreen()],
-        ),
+          const Expanded(
+            child: TabBarView(
+              children: [ContributionScreen(), FundAllocationScreen()],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -246,17 +242,7 @@ class _DashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-      ),
-      body: RefreshIndicator(
+    return RefreshIndicator(
         onRefresh: () async {
           final authProvider = Provider.of<AuthProvider>(
             context,
@@ -323,7 +309,6 @@ class _DashboardTab extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 

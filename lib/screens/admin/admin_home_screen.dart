@@ -246,12 +246,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             );
           },
           onLogoutTap: () async {
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(); // Close drawer first
             final authProvider = Provider.of<AuthProvider>(
               context,
               listen: false,
             );
             await authProvider.signOut();
+            // Navigation will be handled by AuthWrapper listening to AuthProvider
           },
         ),
         body: PageView(
@@ -504,7 +505,7 @@ class _AdminDashboardTab extends StatelessWidget {
       builder: (context, contributionProvider, loanProvider, child) {
         final loanStats = loanProvider.getLoanStats();
 
-        // Sample data for charts
+        // Generate chart data from actual loan statistics
         final loanStatusData = [
           ChartData(
             label: 'Pending',

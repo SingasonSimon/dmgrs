@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import '../../models/meeting_model.dart';
+import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/meeting_provider.dart';
+import '../../services/firestore_service.dart';
 import '../../services/meeting_service.dart';
 import '../../utils/constants.dart';
+import '../../utils/helpers.dart';
 import '../../widgets/modern_card.dart';
 
 class AdminMeetingsScreen extends StatefulWidget {
@@ -15,35 +19,17 @@ class AdminMeetingsScreen extends StatefulWidget {
 }
 
 class _AdminMeetingsScreenState extends State<AdminMeetingsScreen> {
-  bool _isLoading = false;
-  List<MeetingModel> _meetings = [];
-
   @override
   void initState() {
     super.initState();
-    _loadMeetings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadMeetings();
+    });
   }
 
   Future<void> _loadMeetings() async {
-    if (!mounted) return;
-    
-    setState(() => _isLoading = true);
-    try {
-      final meetings = await MeetingService.getAllMeetings();
-      if (mounted) {
-        setState(() => _meetings = meetings);
-      }
-    } catch (e) {
-      print('Error loading meetings: $e');
-      if (mounted) {
-        setState(() => _meetings = []);
-        _showError('Failed to load meetings: ${e.toString()}');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+    final meetingProvider = Provider.of<MeetingProvider>(context, listen: false);
+    await meetingProvider.loadMeetings();
   }
 
   Future<void> _createMeeting() async {
@@ -55,40 +41,96 @@ class _AdminMeetingsScreenState extends State<AdminMeetingsScreen> {
       builder: (context) => _CreateMeetingDialog(),
     );
 
-    if (result != null) {
-      setState(() => _isLoading = true);
-      try {
-        await MeetingService.createMeeting(
-          title: result['title'],
-          description: result['description'],
-          scheduledDate: result['scheduledDate'],
-          organizerId: authProvider.currentUser!.userId,
-          organizerName: authProvider.currentUser!.name,
-          attendeeIds: result['attendeeIds'] ?? [],
-          meetingType: result['meetingType'] ?? 'general',
-          googleMeetUrl: result['googleMeetUrl'] ?? '',
-        );
+    if (result != null && mounted) {
+      final meetingProvider = Provider.of<MeetingProvider>(context, listen: false);
+      final meetingId = await meetingProvider.createMeeting(
+        title: result['title'],
+        description: result['description'],
+        scheduledDate: result['scheduledDate'],
+        organizerId: authProvider.currentUser!.userId,
+        organizerName: authProvider.currentUser!.name,
+        attendeeIds: result['attendeeIds'] ?? [],
+        meetingType: result['meetingType'] ?? 'general',
+        googleMeetUrl: result['googleMeetUrl'] ?? '',
+      );
 
-        _loadMeetings();
-        _showSuccess('Meeting created successfully!');
-      } catch (e) {
-        _showError('Failed to create meeting: $e');
-      } finally {
-        setState(() => _isLoading = false);
+      if (mounted) {
+        if (meetingId != null) {
+          AppHelpers.showSuccessSnackBar(context, 'Meeting created successfully!');
+        } else {
+          AppHelpers.showErrorSnackBar(
+            context,
+            meetingProvider.error ?? 'Failed to create meeting',
+          );
+        }
       }
     }
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+  Future<void> _deleteMeeting(MeetingModel meeting) async {
+    final isCompleted = meeting.status == AppConstants.meetingCompleted;
+    final isPast = meeting.scheduledDate.isBefore(DateTime.now());
+    final willArchive = isCompleted || (isPast && meeting.status == AppConstants.meetingScheduled);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(willArchive ? 'Archive Meeting' : 'Delete Meeting'),
+        content: Text(
+          willArchive
+              ? 'This meeting will be archived and moved to history. It will no longer appear in active meetings but will remain in meeting history. Continue?'
+              : 'Are you sure you want to permanently delete "${meeting.title}"? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: willArchive ? Colors.orange : Colors.red,
+            ),
+            child: Text(willArchive ? 'Archive' : 'Delete'),
+          ),
+        ],
+      ),
     );
+
+    if (confirmed == true && mounted) {
+      final meetingProvider = Provider.of<MeetingProvider>(context, listen: false);
+      final success = await meetingProvider.deleteMeeting(meeting.meetingId);
+      if (mounted) {
+        if (success) {
+          AppHelpers.showSuccessSnackBar(
+            context,
+            willArchive
+                ? 'Meeting archived successfully! It will appear in meeting history.'
+                : 'Meeting deleted successfully!',
+          );
+        } else {
+          AppHelpers.showErrorSnackBar(
+            context,
+            meetingProvider.error ?? 'Failed to ${willArchive ? 'archive' : 'delete'} meeting',
+          );
+        }
+      }
+    }
   }
 
-  void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green),
-    );
+  Future<void> _updateMeetingStatus(MeetingModel meeting, String status) async {
+    final meetingProvider = Provider.of<MeetingProvider>(context, listen: false);
+    final success = await meetingProvider.updateMeetingStatus(meeting.meetingId, status);
+    if (mounted) {
+      if (success) {
+        AppHelpers.showSuccessSnackBar(context, 'Meeting status updated!');
+      } else {
+        AppHelpers.showErrorSnackBar(
+          context,
+          meetingProvider.error ?? 'Failed to update meeting status',
+        );
+      }
+    }
   }
 
   @override
@@ -97,76 +139,146 @@ class _AdminMeetingsScreenState extends State<AdminMeetingsScreen> {
       appBar: AppBar(
         title: const Text('Manage Meetings'),
         actions: [
-          IconButton(icon: const Icon(Icons.add), onPressed: _createMeeting),
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadMeetings),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _createMeeting,
+            tooltip: 'Create Meeting',
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadMeetings,
+            tooltip: 'Refresh',
+          ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+      body: Consumer<MeetingProvider>(
+        builder: (context, meetingProvider, child) {
+          if (meetingProvider.isLoading && meetingProvider.meetings.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (meetingProvider.error != null && meetingProvider.meetings.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    meetingProvider.error!,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadMeetings,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final upcomingMeetings = meetingProvider.upcomingMeetings;
+
+          return RefreshIndicator(
+            onRefresh: _loadMeetings,
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildUpcomingMeetings(),
-                  const SizedBox(height: 24),
-                  _buildAllMeetings(),
+                  if (upcomingMeetings.isNotEmpty) ...[
+                    _buildSectionHeader('Upcoming Meetings', upcomingMeetings.length),
+                    const SizedBox(height: 16),
+                    ...upcomingMeetings.map((meeting) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildMeetingCard(meeting),
+                        )),
+                    const SizedBox(height: 24),
+                  ],
+                  _buildSectionHeader('All Active Meetings', meetingProvider.activeMeetings.length),
+                  const SizedBox(height: 16),
+                  if (meetingProvider.meetings.isEmpty)
+                    ModernCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.event_busy,
+                                size: 64,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No meetings scheduled',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    ...meetingProvider.activeMeetings.map((meeting) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildMeetingCard(meeting),
+                        )),
+                  if (meetingProvider.archivedMeetings.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildSectionHeader('Archived Meetings (History)', meetingProvider.archivedMeetings.length),
+                    const SizedBox(height: 16),
+                    ...meetingProvider.archivedMeetings.map((meeting) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildMeetingCard(meeting, isArchived: true),
+                        )),
+                  ],
                 ],
               ),
             ),
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildUpcomingMeetings() {
-    final upcomingMeetings = _meetings
-        .where((meeting) => meeting.isUpcoming)
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSectionHeader(String title, int count) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Upcoming Meetings',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          title,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        const SizedBox(height: 16),
-        if (upcomingMeetings.isEmpty)
-          ModernCard(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'No upcoming meetings scheduled',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '$count',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
             ),
-          )
-        else
-          ...upcomingMeetings.map((meeting) => _buildMeetingCard(meeting)),
-      ],
-    );
-  }
-
-  Widget _buildAllMeetings() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'All Meetings',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
         ),
-        const SizedBox(height: 16),
-        ..._meetings.map((meeting) => _buildMeetingCard(meeting)),
       ],
     );
   }
 
-  Widget _buildMeetingCard(MeetingModel meeting) {
+  Widget _buildMeetingCard(MeetingModel meeting, {bool isArchived = false}) {
     return ModernCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -285,16 +397,72 @@ class _AdminMeetingsScreenState extends State<AdminMeetingsScreen> {
               ),
             ],
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton.icon(
-                  onPressed: () => _showMeetingDetails(meeting),
-                  icon: const Icon(Icons.info_outline, size: 16),
-                  label: const Text('Details'),
+            if (isArchived)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
-            ),
+                child: Row(
+                  children: [
+                    Icon(Icons.archive, size: 16, color: Colors.grey.shade600),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Archived - This meeting is in history',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (meeting.organizerId ==
+                      Provider.of<AuthProvider>(context, listen: false).currentUser?.userId)
+                    Row(
+                      children: [
+                        if (meeting.status == AppConstants.meetingScheduled)
+                          TextButton.icon(
+                            onPressed: () => _updateMeetingStatus(
+                              meeting,
+                              AppConstants.meetingInProgress,
+                            ),
+                            icon: const Icon(Icons.play_arrow, size: 16),
+                            label: const Text('Start'),
+                          ),
+                        if (meeting.status == AppConstants.meetingInProgress)
+                          TextButton.icon(
+                            onPressed: () => _updateMeetingStatus(
+                              meeting,
+                              AppConstants.meetingCompleted,
+                            ),
+                            icon: const Icon(Icons.check, size: 16),
+                            label: const Text('Complete'),
+                          ),
+                        TextButton.icon(
+                          onPressed: () => _deleteMeeting(meeting),
+                          icon: const Icon(Icons.delete, size: 16),
+                          label: const Text('Delete'),
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        ),
+                      ],
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  TextButton.icon(
+                    onPressed: () => _showMeetingDetails(meeting),
+                    icon: const Icon(Icons.info_outline, size: 16),
+                    label: const Text('Details'),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -323,9 +491,9 @@ class _AdminMeetingsScreenState extends State<AdminMeetingsScreen> {
   void _copyMeetingLink(String url) async {
     try {
       await Clipboard.setData(ClipboardData(text: url));
-      _showSuccess('Meeting link copied to clipboard!');
+      AppHelpers.showSuccessSnackBar(context, 'Meeting link copied to clipboard!');
     } catch (e) {
-      _showError('Failed to copy link: $e');
+      AppHelpers.showErrorSnackBar(context, 'Failed to copy link: $e');
     }
   }
 
@@ -333,7 +501,7 @@ class _AdminMeetingsScreenState extends State<AdminMeetingsScreen> {
     try {
       await MeetingService.joinMeeting(meetingUrl);
     } catch (e) {
-      _showError('Failed to join meeting: $e');
+      AppHelpers.showErrorSnackBar(context, 'Failed to join meeting: $e');
     }
   }
 
@@ -383,15 +551,38 @@ class _CreateMeetingDialogState extends State<_CreateMeetingDialog> {
   final _googleMeetUrlController = TextEditingController();
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = const TimeOfDay(hour: 14, minute: 0);
-  final List<String> _attendeeIds = [];
+  final Set<String> _selectedAttendeeIds = {};
   String _meetingType = 'general';
+  bool _isLoadingMembers = false;
+  List<UserModel> _members = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
     _googleMeetUrlController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMembers() async {
+    setState(() => _isLoadingMembers = true);
+    try {
+      _members = await FirestoreService.getActiveMembers();
+    } catch (e) {
+      print('Error loading members: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingMembers = false);
+      }
+    }
   }
 
   @override
@@ -467,7 +658,7 @@ class _CreateMeetingDialogState extends State<_CreateMeetingDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _meetingType,
+                value: _meetingType,
                 decoration: const InputDecoration(
                   labelText: 'Meeting Type',
                   border: OutlineInputBorder(),
@@ -485,6 +676,82 @@ class _CreateMeetingDialogState extends State<_CreateMeetingDialog> {
                   DropdownMenuItem(value: 'training', child: Text('Training')),
                 ],
                 onChanged: (value) => setState(() => _meetingType = value!),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Select Attendees (${_selectedAttendeeIds.length} selected)',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search members...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                        )
+                      : null,
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 200),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: _isLoadingMembers
+                    ? const Center(child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(),
+                      ))
+                    : _members.isEmpty
+                        ? const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text('No members available'),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _members.length,
+                            itemBuilder: (context, index) {
+                              final member = _members[index];
+                              final memberId = member.userId;
+                              final memberName = member.name;
+                              final isSelected = _selectedAttendeeIds.contains(memberId);
+                              final searchQuery = _searchController.text.toLowerCase();
+                              final matchesSearch = searchQuery.isEmpty ||
+                                  memberName.toLowerCase().contains(searchQuery) ||
+                                  member.phone.toLowerCase().contains(searchQuery);
+
+                              if (!matchesSearch) return const SizedBox.shrink();
+
+                              return CheckboxListTile(
+                                title: Text(memberName),
+                                subtitle: Text(member.phone),
+                                value: isSelected,
+                                onChanged: (value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      _selectedAttendeeIds.add(memberId);
+                                    } else {
+                                      _selectedAttendeeIds.remove(memberId);
+                                    }
+                                  });
+                                },
+                                dense: true,
+                              );
+                            },
+                          ),
               ),
             ],
           ),
@@ -539,7 +806,7 @@ class _CreateMeetingDialogState extends State<_CreateMeetingDialog> {
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'scheduledDate': scheduledDate,
-        'attendeeIds': _attendeeIds,
+        'attendeeIds': _selectedAttendeeIds.toList(),
         'meetingType': _meetingType,
         'googleMeetUrl': _googleMeetUrlController.text.trim(),
       });

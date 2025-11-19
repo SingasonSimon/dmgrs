@@ -26,26 +26,35 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
   }
 
   Future<void> _loadMeetings() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       if (authProvider.currentUser != null) {
+        // Load both active and archived meetings for complete history
         final userMeetings = await MeetingService.getUserMeetings(
           authProvider.currentUser!.userId,
+          includeArchived: true, // Include archived for history
         );
         final upcomingMeetings = await MeetingService.getUpcomingMeetings();
 
-        setState(() {
-          _meetings = userMeetings;
-          _nextMeeting = upcomingMeetings.isNotEmpty
-              ? upcomingMeetings.first
-              : null;
-        });
+        if (mounted) {
+          setState(() {
+            _meetings = userMeetings;
+            _nextMeeting = upcomingMeetings.isNotEmpty
+                ? upcomingMeetings.first
+                : null;
+          });
+        }
       }
     } catch (e) {
-      _showError('Failed to load meetings: $e');
+      if (mounted) {
+        _showError('Failed to load meetings: $e');
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -258,17 +267,17 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
   }
 
   Widget _buildMeetingHistory(BuildContext context) {
-    // Filter past meetings (not upcoming and completed)
+    // Filter past meetings (completed or archived)
     final pastMeetings = _meetings
         .where(
           (meeting) =>
-              !meeting.isUpcoming &&
-              meeting.status == AppConstants.meetingCompleted,
+              (meeting.status == AppConstants.meetingCompleted || meeting.isArchived) &&
+              !meeting.isUpcoming,
         )
         .toList()
-        .reversed
-        .take(10)
-        .toList();
+      ..sort((a, b) => b.scheduledDate.compareTo(a.scheduledDate)); // Sort by date descending
+    
+    final displayMeetings = pastMeetings.take(10).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,7 +289,7 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        if (pastMeetings.isEmpty)
+        if (displayMeetings.isEmpty)
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -298,11 +307,11 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
-                children: pastMeetings.map((meeting) {
+                children: displayMeetings.map((meeting) {
                   return Column(
                     children: [
                       _buildMeetingItem(context, meeting),
-                      if (meeting != pastMeetings.last) const Divider(),
+                      if (meeting != displayMeetings.last) const Divider(),
                     ],
                   );
                 }).toList(),
@@ -315,16 +324,30 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
 
   Widget _buildMeetingItem(BuildContext context, MeetingModel meeting) {
     final isAttended = meeting.status == AppConstants.meetingCompleted;
+    final isArchived = meeting.isArchived;
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: isAttended ? Colors.green : Colors.grey,
+        backgroundColor: isAttended ? Colors.green : (isArchived ? Colors.grey.shade400 : Colors.grey),
         child: Icon(
-          isAttended ? Icons.check : Icons.close,
+          isAttended ? Icons.check : (isArchived ? Icons.archive : Icons.close),
           color: Colors.white,
         ),
       ),
-      title: Text(meeting.title),
+      title: Row(
+        children: [
+          Expanded(child: Text(meeting.title)),
+          if (isArchived)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Icon(
+                Icons.archive,
+                size: 16,
+                color: Colors.grey.shade600,
+              ),
+            ),
+        ],
+      ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -336,6 +359,14 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
+          if (isArchived && meeting.archivedAt != null)
+            Text(
+              'Archived: ${_formatDateTime(meeting.archivedAt!)}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey.shade600,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
         ],
       ),
       trailing: Chip(
@@ -343,7 +374,7 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
           meeting.statusDisplayText,
           style: const TextStyle(color: Colors.white, fontSize: 12),
         ),
-        backgroundColor: _getStatusColor(meeting.status),
+        backgroundColor: isArchived ? Colors.grey : _getStatusColor(meeting.status),
       ),
     );
   }

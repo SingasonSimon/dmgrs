@@ -1,6 +1,6 @@
 class AppConstants {
   // App Information
-  static const String appName = 'Digital Merry Go Round';
+  static const String appName = 'DMGRS';
   static const String appVersion = '1.0.0';
 
   // Financial Constants

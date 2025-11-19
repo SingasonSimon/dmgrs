@@ -19,7 +19,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     
     <application
-        android:label="digital_merry_go_round"
+        android:label="DMGRS"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
