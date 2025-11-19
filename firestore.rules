@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Users collection - users can read/write their own data
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+      // Admins can read all users
+      allow read: if isAdmin();
+    }
+    
+    // Contributions - users can read their own, admins can read all
+    match /contributions/{contributionId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+    }
+    
+    // Loans - users can read their own, admins can read all
+    match /loans/{loanId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+    }
+    
+    // Allocations - users can read their own, admins can read all
+    match /allocations/{allocationId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Cycles - all authenticated users can read, only admins can write
+    match /cycles/{cycleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Lending Pool - all authenticated users can read, only admins can write
+    match /lendingPool/{poolId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Transactions - users can read their own, admins can read all
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+    
+    // Notifications - users can read their own
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Groups - members can read groups they belong to, admins can read all
+    match /groups/{groupId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.memberIds.hasAny([request.auth.uid]) || 
+         resource.data.adminId == request.auth.uid || 
+         isAdmin());
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
+        (resource.data.adminId == request.auth.uid || isAdmin());
+    }
+  }
+}
+

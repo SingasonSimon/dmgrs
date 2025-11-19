@@ -73,9 +73,37 @@ class AuthService {
       final User? user = result.user;
       print('AuthService: Firebase auth successful - User ID: ${user?.uid}');
       if (user != null) {
-        // Get user data from Firestore
-        print('AuthService: Fetching user data from Firestore...');
-        final userModel = await FirestoreService.getUser(user.uid);
+        // Reload user to ensure auth token is fresh
+        await user.reload();
+        final reloadedUser = _auth.currentUser;
+        if (reloadedUser == null) {
+          throw Exception('User reload failed after sign in');
+        }
+
+        // Wait a bit for auth state to propagate to Firestore
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Retry getting user data from Firestore with exponential backoff
+        UserModel? userModel;
+        int retries = 3;
+        for (int i = 0; i < retries; i++) {
+          try {
+            print('AuthService: Fetching user data from Firestore (attempt ${i + 1}/$retries)...');
+            userModel = await FirestoreService.getUser(reloadedUser.uid);
+            if (userModel != null) {
+              break;
+            }
+          } catch (e) {
+            print('AuthService: Firestore access attempt ${i + 1} failed: $e');
+            if (i < retries - 1) {
+              // Wait before retrying with exponential backoff
+              await Future.delayed(Duration(milliseconds: 500 * (i + 1)));
+            } else {
+              rethrow;
+            }
+          }
+        }
+
         print('AuthService: User data from Firestore: ${userModel?.name}');
 
         if (userModel != null) {
@@ -322,7 +350,25 @@ class AuthService {
     try {
       final user = _auth.currentUser;
       if (user != null) {
-        return await FirestoreService.getUser(user.uid);
+        // Retry getting user data with exponential backoff
+        UserModel? userModel;
+        int retries = 3;
+        for (int i = 0; i < retries; i++) {
+          try {
+            userModel = await FirestoreService.getUser(user.uid);
+            if (userModel != null) {
+              break;
+            }
+          } catch (e) {
+            if (i < retries - 1) {
+              // Wait before retrying with exponential backoff
+              await Future.delayed(Duration(milliseconds: 500 * (i + 1)));
+            } else {
+              rethrow;
+            }
+          }
+        }
+        return userModel;
       }
       return null;
     } catch (e) {
@@ -338,7 +384,27 @@ class AuthService {
           print('AuthService: Stream - Firebase user: ${user?.uid}');
           if (user != null) {
             print('AuthService: Stream - Fetching user data from Firestore...');
-            final userModel = await FirestoreService.getUser(user.uid);
+            // Retry getting user data with exponential backoff
+            UserModel? userModel;
+            int retries = 3;
+            for (int i = 0; i < retries; i++) {
+              try {
+                userModel = await FirestoreService.getUser(user.uid);
+                if (userModel != null) {
+                  break;
+                }
+              } catch (e) {
+                print('AuthService: Stream - Firestore access attempt ${i + 1} failed: $e');
+                if (i < retries - 1) {
+                  // Wait before retrying with exponential backoff
+                  await Future.delayed(Duration(milliseconds: 500 * (i + 1)));
+                } else {
+                  // Return null on final failure instead of throwing
+                  print('AuthService: Stream - Failed to get user data after $retries attempts');
+                  return null;
+                }
+              }
+            }
             print(
               'AuthService: Stream - User data: ${userModel?.name} (${userModel?.role})',
             );
